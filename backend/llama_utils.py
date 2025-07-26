@@ -39,32 +39,66 @@ def generate_llama_response(prompt: str, max_tokens=64):
 
 def classify_email_tone(email_text: str) -> str:
     prompt = (
-        "You are a tone classifier. Respond with one word: polite, urgent, neutral, or formal.\n\n"
-        "Email: Please let me know your feedback at your convenience.\nAnswer: polite\n"
-        "Email: I need this done immediately!\nAnswer: urgent\n"
-        "Now I need you to answer about the email below:\n"
+        "You are a tone classifier. Respond with a single word that describes the emotional tone of the email.\n"
+        "Choose ONLY from the following: polite, urgent, neutral, formal, angry, friendly, apologetic, "
+        "appreciative, sarcastic, confused, demanding, encouraging, threatening, dismissive.\n\n"
+
+        "Email: Please help me with the budget document.\nAnswer: polite\n"
+        "Email: Please help me now, I need it urgently!\nAnswer: urgent\n"
+        "Email: Please leave me alone.\nAnswer: dismissive\n"
+        "Email: What the hell were you thinking?\nAnswer: angry\n"
+        "Email: You're amazing, thank you so much!\nAnswer: appreciative\n"
+        "Email: I'm sorry this happened. I'll fix it.\nAnswer: apologetic\n"
+        "Email: Can we look into this next week?\nAnswer: neutral\n"
+        "Email: Let's grab coffee when you're free\nAnswer: friendly\n"
+        "Email: Just great. Another issue to deal with.\nAnswer: sarcastic\n"
+        "Email: Why wasn't I told about this earlier?\nAnswer: confused\n"
+        "Email: I expect a report on my desk by 9am. No excuses.\nAnswer: demanding\n"
+        "Email: You've got this! Keep going!\nAnswer: encouraging\n"
+        "Email: If you don't respond, I will escalate this.\nAnswer: threatening\n"
+        "Now classify the tone of this email:\n"
         f"Email: {email_text.strip()}\nAnswer:"
     )
+
 
     result = generate_llama_response(prompt, max_tokens=8)
     if result:
         result = result.lower()
         print("[Tone Raw]:", repr(result))
-        for tone in ["polite", "urgent", "neutral", "formal"]:
+        tones = [
+            "polite", "urgent", "neutral", "formal", "angry", "friendly", "apologetic",
+            "appreciative", "sarcastic", "confused", "demanding", "encouraging",
+            "threatening", "dismissive"
+        ]
+
+        for tone in tones:
             if tone in result:
                 return tone
+
+
         return f"unknown ({result})"
 
     # 🔁 Fallback: Keyword-based tone detection
     text = email_text.lower()
-    if any(word in text for word in ["please", "kindly", "thank you"]):
-        return "polite"
-    elif any(word in text for word in ["immediately", "asap", "urgent"]):
-        return "urgent"
-    elif any(word in text for word in ["sincerely", "regards", "respectfully"]):
-        return "formal"
-    else:
-        return "failed"
+    if any(word in text for word in ["sorry", "apologize", "inconvenience"]):
+        return "apologetic"
+    elif any(word in text for word in ["great job", "well done", "thank you", "appreciate"]):
+        return "appreciative"
+    elif any(word in text for word in ["what now", "again?", "of course", "just great"]):
+        return "sarcastic"
+    elif any(word in text for word in ["looking forward", "can't wait", "excited"]):
+        return "friendly"
+    elif any(word in text for word in ["why", "how come", "wasn't it", "unclear"]):
+        return "confused"
+    elif any(word in text for word in ["do this", "no excuses", "now"]):
+        return "demanding"
+    elif any(word in text for word in ["you can do it", "keep going", "don't give up"]):
+        return "encouraging"
+    elif any(word in text for word in ["consequences", "last warning", "legal action"]):
+        return "threatening"
+    elif any(word in text for word in ["whatever", "don't care", "not my problem"]):
+        return "dismissive"
+
 
 # ------------------------- #
 # Spam Detector
@@ -87,3 +121,15 @@ def detect_spam(email_text: str) -> bool:
     # 🔁 Fallback: Keyword-based spam detection
     spam_keywords = ["click here", "free", "prize", "congratulations", "winner", "claim", "urgent offer"]
     return any(word in email_text.lower() for word in spam_keywords)
+
+def summarize_email(email_text: str) -> str:
+    prompt = (
+        "You are an expert email summarizer. Summarize the following email in 1-2 sentences:\n\n"
+        f"Email: {email_text.strip()}\n\n"
+        "Summary:"
+    )
+    result = generate_llama_response(prompt, max_tokens=100)
+    if result:
+        print("[Summary Raw]:", repr(result))
+        return result.strip()
+    return "Summary unavailable."
