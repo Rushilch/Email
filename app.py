@@ -3,13 +3,20 @@ from flask_cors import CORS
 import sqlite3
 import bcrypt
 import re
+import os
 from datetime import datetime
+from dotenv import load_dotenv
 from backend.llama_utils import generate_llama_response, classify_email_tone, detect_spam, summarize_email
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 
 app = Flask(__name__)
 app.secret_key = 'your_super_secret_key_here'
 CORS(app, supports_credentials=True)
 
+load_dotenv()
 DATABASE = 'Sbox.db'
 
 def init_db():
@@ -143,32 +150,41 @@ def send_email():
 
     conn = get_db()
     cur = conn.cursor()
-    cur.execute('SELECT is_active FROM users WHERE id = ?', (data['sender_id'],))
-    user = cur.fetchone()
-    if not user or not user['is_active']:
-        conn.close()
-        return jsonify({'status': 'error', 'message': 'User account is disabled'}), 403
 
-    body_text = data['body']
-    tone = classify_email_tone(body_text)
-    is_spam = 1 if detect_spam(body_text) else 0
-    summary = summarize_email(body_text)
-    cur.execute("""
-        INSERT INTO emails (sender_id, recipient_email, subject, body, tone, sent_at, is_spam, summary)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        data['sender_id'],
-        data['recipient'],
-        data['subject'],
-        data['body'],
-        tone,
-        datetime.now(),
-        is_spam,
-        summary
-    ))
-    conn.commit()
+    # Check if recipient exists
+    cur.execute('SELECT id FROM users WHERE email = ?', (data['recipient'],))
+    recipient_user = cur.fetchone()
+
+    # If recipient exists → store in DB
+    if recipient_user:
+        body_text = data['body']
+        tone = classify_email_tone(body_text)
+        is_spam = 1 if detect_spam(body_text) else 0
+        summary = summarize_email(body_text)
+        cur.execute("""
+            INSERT INTO emails (sender_id, recipient_email, subject, body, tone, sent_at, is_spam, summary)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            data['sender_id'],
+            data['recipient'],
+            data['subject'],
+            data['body'],
+            tone,
+            datetime.now(),
+            is_spam,
+            summary
+        ))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Email sent internally', 'is_spam': bool(is_spam)}), 200
+
+    # If recipient NOT in DB → send via Gmail
     conn.close()
-    return jsonify({'message': 'Email sent', 'is_spam': bool(is_spam)}), 200
+    if send_external_email(data['recipient'], data['subject'], data['body']):
+        return jsonify({'message': 'Recipient not found in Sbox, sent via Gmail'}), 200
+    else:
+        return jsonify({'message': 'Failed to send email externally'}), 500
+
 
 @app.route('/sent_emails', methods=['GET'])
 def get_user_sent_emails():
@@ -369,6 +385,52 @@ def summarize_email_route():
         return jsonify({"error": "Missing email_text"}), 400
     summary = summarize_email(email_text)
     return jsonify({"summary": summary})
+
+def send_external_email(to_email, subject, body):
+    sender_email = os.getenv("SENDER_EMAIL")  # Environment variable name as string
+    sender_password = os.getenv("EMAIL_PASS") # Environment variable name as string
+
+    if not sender_email or not sender_password:
+        print("Error: Missing email credentials in environment variables.")
+        return False
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        print("Error sending Gmail:", e)
+        return False
+
+@app.route("/admin/delete_email/<int:email_id>", methods=["DELETE"])
+def delete_email(email_id):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        # Delete the email
+        cur.execute("DELETE FROM emails WHERE id = ?", (email_id,))
+        conn.commit()
+
+        if cur.rowcount == 0:
+            # No email found with given ID
+            return jsonify({"status": "error", "message": "Email not found"}), 404
+
+        return jsonify({"status": "success", "message": "Email deleted successfully"}), 200
+
+    except Exception as e:
+        print("Error deleting email:", e)
+        return jsonify({"status": "error", "message": "Server error"}), 500
+
+    finally:
+        conn.close()
 
 @app.route('/logout')
 def logout():

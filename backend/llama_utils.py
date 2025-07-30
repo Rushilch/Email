@@ -1,67 +1,52 @@
-import threading
-from llama_cpp import Llama
-
-# Thread lock to avoid simultaneous llama() calls
-llm_lock = threading.Lock()
-
-# Load LLaMA model
-llm = Llama(
-    model_path="models/llama-3.2-3b-instruct-q3_k_l.gguf",
-    n_ctx=512,
-    n_threads=6,
-    n_gpu_layers=0,
-    verbose=False
-)
+import os
+from dotenv import load_dotenv
+from groq import Groq
 
 # ------------------------- #
-# LLaMA Wrapper
+# Groq Model Setup
+# ------------------------- #
+
+# Make sure you set your Groq API key in the environment:
+# export GROQ_API_KEY="your_api_key_here"
+# or in Windows:
+# setx GROQ_API_KEY "your_api_key_here"
+load_dotenv()
+client = Groq(api_key=os.getenv("GROQ_API"))
+
+# ------------------------- #
+# Groq Wrapper
 # ------------------------- #
 
 def generate_llama_response(prompt: str, max_tokens=64):
     try:
-        with llm_lock:
-            output = llm(
-                prompt=prompt,
-                max_tokens=max_tokens,
-                temperature=0.1,
-                top_p=0.9,
-                stop=["\n", "User:", "Answer:"]
-            )
-        return output["choices"][0]["text"].strip()
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",  # You can change to llama3-70b if needed
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=max_tokens,
+            top_p=0.9
+        )
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        print("[LLaMA ERROR]:", str(e))
-        return None  # Trigger fallback
-        
+        print("[Groq ERROR]:", str(e))
+        return None
+
 
 # ------------------------- #
-# Tone Classifier
+# Tone Classifier (Multi-tone)
 # ------------------------- #
 
 def classify_email_tone(email_text: str) -> str:
     prompt = (
-        "You are a tone classifier. Respond with a single word that describes the emotional tone of the email.\n"
-        "Choose ONLY from the following: polite, urgent, neutral, formal, angry, friendly, apologetic, "
-        "appreciative, sarcastic, confused, demanding, encouraging, threatening, dismissive.\n\n"
-
-        "Email: Please help me with the budget document.\nAnswer: polite\n"
-        "Email: Please help me now, I need it urgently!\nAnswer: urgent\n"
-        "Email: Please leave me alone.\nAnswer: dismissive\n"
-        "Email: What the hell were you thinking?\nAnswer: angry\n"
-        "Email: You're amazing, thank you so much!\nAnswer: appreciative\n"
-        "Email: I'm sorry this happened. I'll fix it.\nAnswer: apologetic\n"
-        "Email: Can we look into this next week?\nAnswer: neutral\n"
-        "Email: Let's grab coffee when you're free\nAnswer: friendly\n"
-        "Email: Just great. Another issue to deal with.\nAnswer: sarcastic\n"
-        "Email: Why wasn't I told about this earlier?\nAnswer: confused\n"
-        "Email: I expect a report on my desk by 9am. No excuses.\nAnswer: demanding\n"
-        "Email: You've got this! Keep going!\nAnswer: encouraging\n"
-        "Email: If you don't respond, I will escalate this.\nAnswer: threatening\n"
-        "Now classify the tone of this email:\n"
+        "You are a tone classifier. Respond with the main emotional tone present in the email, "
+        "only from the following list: polite, urgent, neutral, formal, "
+        "angry, friendly, apologetic, appreciative, sarcastic, confused, demanding, encouraging, "
+        "threatening, dismissive.\n"
+        "Do not explain, just list the tone.\n\n"
         f"Email: {email_text.strip()}\nAnswer:"
     )
 
-
-    result = generate_llama_response(prompt, max_tokens=8)
+    result = generate_llama_response(prompt, max_tokens=16)
     if result:
         result = result.lower()
         print("[Tone Raw]:", repr(result))
@@ -71,60 +56,82 @@ def classify_email_tone(email_text: str) -> str:
             "threatening", "dismissive"
         ]
 
-        for tone in tones:
-            if tone in result:
-                return tone
+        detected = [tone for tone in tones if tone in result]
+        if detected:
+            return ", ".join(detected)
 
-
-        return f"unknown ({result})"
-
-    # 🔁 Fallback: Keyword-based tone detection
+    # Fallback keyword-based tone detection
+    fallback_tones = []
     text = email_text.lower()
-    if any(word in text for word in ["sorry", "apologize", "inconvenience"]):
-        return "apologetic"
-    elif any(word in text for word in ["great job", "well done", "thank you", "appreciate"]):
-        return "appreciative"
-    elif any(word in text for word in ["what now", "again?", "of course", "just great"]):
-        return "sarcastic"
-    elif any(word in text for word in ["looking forward", "can't wait", "excited"]):
-        return "friendly"
-    elif any(word in text for word in ["why", "how come", "wasn't it", "unclear"]):
-        return "confused"
-    elif any(word in text for word in ["do this", "no excuses", "now"]):
-        return "demanding"
-    elif any(word in text for word in ["you can do it", "keep going", "don't give up"]):
-        return "encouraging"
-    elif any(word in text for word in ["consequences", "last warning", "legal action"]):
-        return "threatening"
-    elif any(word in text for word in ["whatever", "don't care", "not my problem"]):
-        return "dismissive"
+    if any(w in text for w in ["sorry", "apologize", "inconvenience"]):
+        fallback_tones.append("apologetic")
+    if any(w in text for w in ["great job", "well done", "thank you", "appreciate"]):
+        fallback_tones.append("appreciative")
+    if any(w in text for w in ["what now", "again?", "of course", "just great"]):
+        fallback_tones.append("sarcastic")
+    if any(w in text for w in ["looking forward", "can't wait", "excited"]):
+        fallback_tones.append("friendly")
+    if any(w in text for w in ["why", "how come", "wasn't it", "unclear"]):
+        fallback_tones.append("confused")
+    if any(w in text for w in ["do this", "no excuses", "now"]):
+        fallback_tones.append("demanding")
+    if any(w in text for w in ["you can do it", "keep going", "don't give up"]):
+        fallback_tones.append("encouraging")
+    if any(w in text for w in ["consequences", "last warning", "legal action"]):
+        fallback_tones.append("threatening")
+    if any(w in text for w in ["whatever", "don't care", "not my problem"]):
+        fallback_tones.append("dismissive")
+    
+    if fallback_tones:
+        return ", ".join(set(fallback_tones))
+
+    return "neutral"
 
 
 # ------------------------- #
-# Spam Detector
+# Spam Detector (Tone-Aware)
 # ------------------------- #
 
 def detect_spam(email_text: str) -> bool:
-    prompt = (
-        "You are a spam detector. Respond only with 'yes' or 'no'.\n\n"
-        "Email: You've won a free prize! Click this link to claim.\nAnswer: yes\n"
-        "Email: Let's schedule a meeting for next week.\nAnswer: no\n"
-        f"Email: {email_text.strip()}\nAnswer:"
-    )
+    """
+    Returns True if email is spam, False otherwise.
+    Uses Groq LLaMA intelligence only — no keyword rules.
+    """
+
+    prompt = f"""
+You are an expert spam, phishing, and scam detector for emails.
+Classify if the email below is spam.
+
+Spam includes:
+- Any scam, phishing, or fraudulent attempt
+- Requests for sensitive personal or financial information
+- Fake offers, contests, or prizes
+- Marketing emails without consent
+- Anything deceptive or harmful
+
+Return your answer in EXACTLY one word: 'yes' or 'no'.
+
+Email:
+\"\"\"{email_text.strip()}\"\"\"
+Answer:
+    """
 
     result = generate_llama_response(prompt, max_tokens=5)
-    if result:
-        result = result.lower()
-        print("[Spam Raw]:", repr(result))
-        return "yes" in result
+    if not result:
+        return False  # default safe value
 
-    # 🔁 Fallback: Keyword-based spam detection
-    spam_keywords = ["click here", "free", "prize", "congratulations", "winner", "claim", "urgent offer"]
-    return any(word in email_text.lower() for word in spam_keywords)
+    answer = result.strip().lower()
+    print("[Spam Raw]:", repr(answer))
+    return answer.startswith("yes")
+
+
+# ------------------------- #
+# Summarizer
+# ------------------------- #
 
 def summarize_email(email_text: str) -> str:
     prompt = (
-        "You are an expert email summarizer. Summarize the following email in 1-2 sentences:\n\n"
+        "You are an expert email summarizer. Summarize the following email using easy vocabulary under 30:\n\n"
         f"Email: {email_text.strip()}\n\n"
         "Summary:"
     )
