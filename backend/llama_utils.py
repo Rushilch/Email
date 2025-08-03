@@ -131,7 +131,7 @@ Answer:
 
 def summarize_email(email_text: str) -> str:
     prompt = (
-        "You are an expert email summarizer. Summarize the following email using easy vocabulary under 30:\n\n"
+        "You are an expert email summarizer. Summarize the following email using easy vocabulary under 30 and just state the summary nothing else:\n\n"
         f"Email: {email_text.strip()}\n\n"
         "Summary:"
     )

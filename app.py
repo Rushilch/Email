@@ -10,7 +10,7 @@ from backend.llama_utils import generate_llama_response, classify_email_tone, de
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
+from email.utils import formataddr
 
 app = Flask(__name__)
 app.secret_key = 'your_super_secret_key_here'
@@ -22,6 +22,8 @@ DATABASE = 'Sbox.db'
 def init_db():
     conn = sqlite3.connect(DATABASE)
     c = conn.cursor()
+    
+    # Internal emails
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
@@ -46,8 +48,26 @@ def init_db():
             FOREIGN KEY (sender_id) REFERENCES users(id)
         )
     ''')
-    admin_email = "admin@Sbox.com"
-    admin_pass = bcrypt.hashpw("Admin@123".encode(), bcrypt.gensalt()).decode()
+    # External emails
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS external_emails (
+            id INTEGER PRIMARY KEY,
+            sender_id INTEGER NOT NULL,
+            sender_name TEXT NOT NULL,
+            recipient_email TEXT NOT NULL,
+            subject TEXT,
+            body TEXT,
+            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            tone TEXT,
+            is_spam BOOLEAN DEFAULT 0,
+            summary TEXT,
+            FOREIGN KEY (sender_id) REFERENCES users(id)
+        )
+    ''')
+    
+    # Create admin account
+    admin_email = "admin@sbox.com"
+    admin_pass = bcrypt.hashpw("admin@123".encode(), bcrypt.gensalt()).decode()
     c.execute('''
         INSERT OR IGNORE INTO users (email, password_hash, is_admin)
         VALUES (?, ?, 1)
@@ -71,10 +91,7 @@ def verify_password(password, hashed):
 @app.route('/')
 def index():
     if 'user_id' in session:
-        if session.get('is_admin'):
-            return render_template('admin_dashboard.html')
-        else:
-            return redirect(url_for('sender_dashboard'))
+        return redirect(url_for('admin_dashboard' if session.get('is_admin') else 'sender_dashboard'))
     return render_template('login.html')
 
 @app.route('/login', methods=['GET','POST'])
@@ -87,19 +104,16 @@ def login():
         if not data or not data.get('email') or not data.get('password'):
             return jsonify({"status": "fail", "message": "Missing or invalid data"}), 400
 
-        email = data['email']
-        password = data['password']
-
         conn = get_db()
         c = conn.cursor()
-        c.execute('SELECT id, password_hash, is_admin FROM users WHERE email = ?', (email,))
+        c.execute('SELECT id, password_hash, is_admin FROM users WHERE email = ?', (data['email'],))
         row = c.fetchone()
         conn.close()
 
-        if row and verify_password(password, row[1]):
+        if row and verify_password(data['password'], row[1]):
             session['user_id'] = row[0]
             session['is_admin'] = bool(row[2])
-            session['email'] = email
+            session['email'] = data['email']
             return jsonify({
                 'status': 'success',
                 'redirect': '/admin_dashboard' if row[2] else '/sender_dashboard'
@@ -151,11 +165,19 @@ def send_email():
     conn = get_db()
     cur = conn.cursor()
 
-    # Check if recipient exists
+    # Get sender name from DB
+    cur.execute('SELECT email FROM users WHERE id = ?', (data['sender_id'],))
+    sender_email_db = cur.fetchone()
+    if not sender_email_db:
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Sender not found'}), 404
+
+    sbox_sender_name = sender_email_db[0].split("@")[0]
+
+    # Check if recipient exists internally
     cur.execute('SELECT id FROM users WHERE email = ?', (data['recipient'],))
     recipient_user = cur.fetchone()
 
-    # If recipient exists → store in DB
     if recipient_user:
         body_text = data['body']
         tone = classify_email_tone(body_text)
@@ -165,159 +187,160 @@ def send_email():
             INSERT INTO emails (sender_id, recipient_email, subject, body, tone, sent_at, is_spam, summary)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            data['sender_id'],
-            data['recipient'],
-            data['subject'],
-            data['body'],
-            tone,
-            datetime.now(),
-            is_spam,
-            summary
+            data['sender_id'], data['recipient'], data['subject'], data['body'],
+            tone, datetime.now(), is_spam, summary
         ))
         conn.commit()
         conn.close()
         return jsonify({'message': 'Email sent internally', 'is_spam': bool(is_spam)}), 200
 
-    # If recipient NOT in DB → send via Gmail
-    conn.close()
-    if send_external_email(data['recipient'], data['subject'], data['body']):
-        return jsonify({'message': 'Recipient not found in Sbox, sent via Gmail'}), 200
+    # External email via Gmail SMTP
+    if send_external_email(data['recipient'], data['subject'], data['body'], sbox_sender_name):
+        tone = classify_email_tone(data['body'])
+        is_spam = 1 if detect_spam(data['body']) else 0
+        summary = summarize_email(data['body'])
+        cur.execute("""
+            INSERT INTO external_emails (sender_id, sender_name, recipient_email, subject, body, tone, sent_at, is_spam, summary)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            data['sender_id'], sbox_sender_name, data['recipient'], data['subject'], data['body'],
+            tone, datetime.now(), is_spam, summary
+        ))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': f'External email sent via Gmail as {sbox_sender_name}'}), 200
     else:
+        conn.close()
         return jsonify({'message': 'Failed to send email externally'}), 500
 
+def send_external_email(to_email, subject, body, sbox_sender_name):
+    sender_email = os.getenv("SENDER_EMAIL")
+    sender_password = os.getenv("EMAIL_PASS")
 
-@app.route('/sent_emails', methods=['GET'])
-def get_user_sent_emails():
-    sender_id = request.args.get('sender_id')
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT
-            e.id,
-            e.recipient_email,
-            e.subject,
-            e.body,
-            e.sent_at,
-            e.opened_at,
-            e.is_spam,
-            e.tone
-        FROM emails e
-        WHERE e.sender_id = ?
-        ORDER BY e.sent_at DESC
-    """, (sender_id,))
-    emails = [dict(row) for row in cur.fetchall()]
-    conn.close()
-    return jsonify(emails)
+    if not sender_email or not sender_password:
+        print("Error: Missing email credentials in environment variables.")
+        return False
 
-@app.route('/received_emails')
-def received_emails():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    current_email = session.get('email')
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT 
-            e.id, e.subject, e.body, e.summary, e.sent_at, e.opened_at, 
-            u.email AS sender_email
-        FROM emails e
-        JOIN users u ON e.sender_id = u.id
-        WHERE e.recipient_email = ?
-        ORDER BY e.sent_at DESC
-    """, (current_email,))
-    emails = cur.fetchall()
-    conn.close()
-    return render_template('received_emails.html', emails=emails, current_user=current_email)
+    msg = MIMEMultipart()
+    msg["From"] = formataddr((f"{sbox_sender_name} (via Sbox)", sender_email))
+    msg["To"] = to_email
+    msg["Subject"] = f"(Sbox: {sbox_sender_name}) {subject}"
+    msg.attach(MIMEText(body, "plain"))
 
-@app.route('/mark_email_read/<int:email_id>', methods=['POST'])
-def mark_email_read(email_id):
-    if 'user_id' not in session:
-        return jsonify({'status': 'error', 'message': 'Not authenticated'}), 401
-    current_email = session.get('email')
-    current_time = datetime.now()
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT id FROM emails 
-        WHERE id = ? AND recipient_email = ?
-    """, (email_id, current_email))
-    if not cur.fetchone():
-        conn.close()
-        return jsonify({'status': 'error', 'message': 'Email not found or not authorized'}), 404
-    cur.execute("""
-        UPDATE emails SET opened_at = ?
-        WHERE id = ? AND opened_at IS NULL
-    """, (current_time, email_id))
-    conn.commit()
-    cur.execute("""
-        SELECT e.opened_at, u.email AS sender_email, e.tone, e.is_spam, e.summary
-        FROM emails e
-        JOIN users u ON e.sender_id = u.id
-        WHERE e.id = ?
-    """, (email_id,))
-    updated_email = dict(cur.fetchone())
-    conn.close()
-    # Return accurate values from database (not canned strings)
-    return jsonify({
-        "status": "success",
-        "message": "Email marked as read",
-        "opened_at": updated_email.get('opened_at'),
-        "sender_email": updated_email.get('sender_email'),
-        "tone": updated_email.get('tone'),
-        "is_spam": bool(updated_email.get('is_spam')),
-        "summary": updated_email.get('summary')
-    })
-
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        print("Error sending Gmail:", e)
+        return False
 @app.route('/sender_dashboard')
 def sender_dashboard():
     if 'user_id' not in session:
         return redirect(url_for('index'))
+    
     current_email = session.get('email')
     user_id = session.get('user_id')
     conn = get_db()
     cur = conn.cursor()
+
+    # Internal sent emails
     cur.execute("""
         SELECT 
             e.id, e.recipient_email, e.subject, e.body,
-            strftime('%Y-%m-%d %H:%M', e.sent_at) as sent_at,
-            CASE WHEN e.opened_at IS NULL THEN NULL ELSE strftime('%Y-%m-%d %H:%M', e.opened_at) END as opened_at,
-            e.is_spam, e.tone
+            strftime('%Y-%m-%d %H:%M', e.sent_at) AS sent_at,
+            CASE WHEN e.opened_at IS NULL THEN NULL 
+                 ELSE strftime('%Y-%m-%d %H:%M', e.opened_at) 
+            END AS opened_at,
+            e.is_spam, e.tone,
+            'Internal' AS source
         FROM emails e
         WHERE e.sender_id = ?
         ORDER BY e.sent_at DESC
     """, (user_id,))
-    sent_emails = cur.fetchall()
+    internal_sent = cur.fetchall()
+
+    # External sent emails
+    cur.execute("""
+        SELECT 
+            ee.id, ee.recipient_email, ee.subject, ee.body,
+            strftime('%Y-%m-%d %H:%M', ee.sent_at) AS sent_at,
+            NULL AS opened_at,
+            ee.is_spam, ee.tone,
+            'External' AS source
+        FROM external_emails ee
+        WHERE ee.sender_id = ?
+        ORDER BY ee.sent_at DESC
+    """, (user_id,))
+    external_sent = cur.fetchall()
+
     conn.close()
-    return render_template('sender_dashboard.html',
-                          current_user=current_email,
-                          current_id=user_id,
-                          emails=sent_emails)
+
+    # Merge both internal & external
+    all_sent = internal_sent + external_sent
+
+    return render_template(
+        'sender_dashboard.html',
+        current_user=current_email,
+        current_id=user_id,
+        emails=all_sent  # Combined list
+    )
+
+
 
 @app.route('/admin_dashboard')
 def admin_dashboard():
     if 'user_id' not in session or not session.get('is_admin'):
         flash('You must be logged in as an admin to view this page', 'error')
         return redirect(url_for('login'))
+
     conn = get_db()
     cur = conn.cursor()
+
+    # Users
     cur.execute('SELECT id, email, is_active, is_admin FROM users ORDER BY email')
     users = cur.fetchall()
+
+    # Internal emails
     cur.execute('''
         SELECT e.*, u.email as sender_email 
         FROM emails e
         JOIN users u ON e.sender_id = u.id
         ORDER BY e.sent_at DESC
     ''')
-    all_emails = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+    internal_emails = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+
+    # External emails
+    cur.execute('''
+        SELECT ee.*, u.email as sender_email 
+        FROM external_emails ee
+        JOIN users u ON ee.sender_id = u.id
+        ORDER BY ee.sent_at DESC
+    ''')
+    external_emails = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+
+    # Stats
     stats = {
         "active_users": cur.execute('SELECT COUNT(*) FROM users WHERE is_active = 1').fetchone()[0],
-        "total_emails": cur.execute('SELECT COUNT(*) FROM emails').fetchone()[0],
-        "spam_emails": cur.execute('SELECT COUNT(*) FROM emails WHERE is_spam = 1').fetchone()[0],
+        "total_emails": cur.execute('SELECT COUNT(*) FROM emails').fetchone()[0] + 
+                        cur.execute('SELECT COUNT(*) FROM external_emails').fetchone()[0],
+        "spam_emails": cur.execute('SELECT COUNT(*) FROM emails WHERE is_spam = 1').fetchone()[0] +
+                       cur.execute('SELECT COUNT(*) FROM external_emails WHERE is_spam = 1').fetchone()[0],
         "read_emails": cur.execute('SELECT COUNT(*) FROM emails WHERE opened_at IS NOT NULL').fetchone()[0]
     }
+
     conn.close()
-    return render_template('admin_dashboard.html', users=users, stats=stats,
-                          all_emails=all_emails, current_user=session.get('email'))
+
+    return render_template(
+        'admin_dashboard.html',
+        users=users,
+        stats=stats,
+        internal_emails=internal_emails,
+        external_emails=external_emails,
+        current_user=session.get('email')
+    )
+
 
 @app.route('/admin/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
@@ -386,18 +409,20 @@ def summarize_email_route():
     summary = summarize_email(email_text)
     return jsonify({"summary": summary})
 
-def send_external_email(to_email, subject, body):
-    sender_email = os.getenv("SENDER_EMAIL")  # Environment variable name as string
-    sender_password = os.getenv("EMAIL_PASS") # Environment variable name as string
+def send_external_email(to_email, subject, body, sbox_sender_name):
+    sender_email = os.getenv("SENDER_EMAIL")  # Gmail sending account
+    sender_password = os.getenv("EMAIL_PASS") # Gmail App Password
 
     if not sender_email or not sender_password:
         print("Error: Missing email credentials in environment variables.")
         return False
 
     msg = MIMEMultipart()
-    msg["From"] = sender_email
+    # Show "John (via Sbox)" as the sender name
+    msg["From"] = formataddr((f"{sbox_sender_name} (via Sbox)", sender_email))
     msg["To"] = to_email
-    msg["Subject"] = subject
+    # Add "(Sbox: John)" in subject
+    msg["Subject"] = f"(Sbox: {sbox_sender_name}) {subject}"
     msg.attach(MIMEText(body, "plain"))
 
     try:
@@ -432,10 +457,58 @@ def delete_email(email_id):
     finally:
         conn.close()
 
+@app.route('/received_emails')
+def received_emails():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    current_email = session.get('email')
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT 
+            e.id, e.subject, e.body, e.summary, e.sent_at, e.opened_at, 
+            u.email AS sender_email
+        FROM emails e
+        JOIN users u ON e.sender_id = u.id
+        WHERE e.recipient_email = ?
+        ORDER BY e.sent_at DESC
+    """, (current_email,))
+    emails = cur.fetchall()
+    conn.close()
+    return render_template('received_emails.html', emails=emails, current_user=current_email)
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
+@app.route('/mark_email_read/<int:email_id>', methods=['POST'])
+def mark_email_read(email_id):
+    if 'user_id' not in session:
+        return jsonify({'status': 'error', 'message': 'Not authenticated'}), 401
+
+    user_email = session.get('email')
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE emails
+        SET opened_at = ?
+        WHERE id = ? AND recipient_email = ? AND opened_at IS NULL
+    """, (datetime.now(), email_id, user_email))
+
+    conn.commit()
+
+    # Fetch tone & spam info for modal update
+    cur.execute("SELECT tone, is_spam FROM emails WHERE id = ?", (email_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Email marked as read',
+        'tone': row['tone'] if row else None,
+        'is_spam': bool(row['is_spam']) if row else False
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
