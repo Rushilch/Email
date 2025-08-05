@@ -114,6 +114,29 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
+def send_external_email(to_email, subject, body, sbox_sender_name):
+    sender_email = os.getenv("SENDER_EMAIL")
+    sender_password = os.getenv("EMAIL_PASS")
+
+    if not sender_email or not sender_password:
+        print("Error: Missing SENDER_EMAIL or EMAIL_PASS in .env file.")
+        return False
+
+    msg = MIMEMultipart()
+    msg["From"] = formataddr((f"{sbox_sender_name} (via Sbox)", sender_email))
+    msg["To"] = to_email
+    msg["Subject"] = f"(Sbox: {sbox_sender_name}) {subject}"
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        print("Error sending Gmail:", e)
+        return False
+
 # --- DASHBOARD ROUTES ---
 @app.route('/sender_dashboard')
 def sender_dashboard():
@@ -196,7 +219,7 @@ def send_email():
         conn.execute("INSERT INTO emails (sender_id, recipient_email, subject, body, tone, sent_at, is_spam, summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",(data['sender_id'], data['recipient'], data['subject'], body_text, tone, datetime.now(), is_spam, summary))
     else:
         # NOTE: External sending via SMTP is commented out, assuming it might not be configured.
-        # send_external_email(data['recipient'], data['subject'], data['body'], sbox_sender_name)
+        send_external_email(data['recipient'], data['subject'], data['body'], sbox_sender_name)
         conn.execute("INSERT INTO external_emails (sender_id, sender_name, recipient_email, subject, body, tone, sent_at, is_spam, summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (data['sender_id'], sbox_sender_name, data['recipient'], data['subject'], body_text, tone, datetime.now(), is_spam, summary))
     
     conn.commit()
