@@ -431,9 +431,9 @@ const pieCtx = document.getElementById('statsPieChart');
 new Chart(pieCtx, {
   type: 'doughnut',
   data: {
-    labels: ['Total Emails', 'Spam Emails', 'Read Emails'],
+    labels: ['Unread Emails', 'Spam Emails', 'Read Emails'],
     datasets: [{
-      data: [{{ stats.total_emails }}, {{ stats.spam_emails }}, {{ stats.read_emails }}],
+      data: [{{ stats.total_emails - stats.read_emails }}, {{ stats.spam_emails }}, {{ stats.read_emails }}],
       backgroundColor: ['rgba(67, 97, 238, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(25, 135, 84, 0.8)'],
       borderColor: '#ffffff', borderWidth: 2, hoverOffset: 15
     }]
