@@ -151,4 +151,7 @@ def rewrite_email_tone(text: str, tone: str) -> str:
     )
     # Give the model more tokens for rewriting longer text
     result = generate_llama_response(prompt, max_tokens=512)
+    print(result)
+    if result[0] == '"' and result[-1]=='"':
+        return result[1:-1]
     return result if result else "Could not rewrite the text."
