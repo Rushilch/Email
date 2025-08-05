@@ -90,7 +90,7 @@
     }
     .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
     .stat-title { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
-    .stat-value { font-weight: 700; font-size: 1.75rem; color: var(--text-primary); margin-bottom: 0.25rem; }
+    .stat-value { font-weight: 700; font-size: 1.75rem; }
     .stat-change { font-size: 0.75rem; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; }
     .stat-change.positive { color: var(--bs-green); }
     .stat-change.negative { color: var(--danger-color); }
@@ -107,7 +107,7 @@
     .badge {
       font-weight: 500;
       padding: 0.4em 0.75em;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       letter-spacing: 0.5px;
       border-radius: 50px;
     }
@@ -123,20 +123,7 @@
       font-weight: 500;
       text-transform: capitalize;
     }
-    .tone-polite { background-color: #d1e7dd; color: #0f5132; }
-    .tone-urgent { background-color: #fff3cd; color: #664d03; }
-    .tone-formal { background-color: #cfe2ff; color: #084298; }
-    .tone-neutral { background-color: #e2e3e5; color: #41464b; }
-    .tone-angry { background-color: #f8d7da; color: #842029; }
-    .tone-friendly { background-color: #cff4fc; color: #055160; }
-    .tone-apologetic { background-color: #fefefe; color: #856404; border: 1px solid #ffeeba; }
-    .tone-appreciative { background-color: #e2f0d9; color: #2e7d32; }
-    .tone-sarcastic { background-color: #f0e68c; color: #665c00; }
-    .tone-confused { background-color: #e0e0e0; color: #5c636a; }
-    .tone-demanding { background-color: #f8d7da; color: #721c24; }
-    .tone-encouraging { background-color: #d1e7dd; color: #0f5132; }
-    .tone-threatening { background-color: #f5c6cb; color: #721c24; }
-    .tone-dismissive { background-color: #dee2e6; color: #6c757d; }
+    .tone-polite { background-color: #d1e7dd; color: #0f5132; } .tone-urgent { background-color: #fff3cd; color: #664d03; } .tone-formal { background-color: #cfe2ff; color: #084298; } .tone-neutral { background-color: #e2e3e5; color: #41464b; } .tone-angry { background-color: #f8d7da; color: #842029; } .tone-friendly { background-color: #cff4fc; color: #055160; } .tone-apologetic { background-color: #fefefe; color: #856404; border: 1px solid #ffeeba; } .tone-appreciative { background-color: #e2f0d9; color: #2e7d32; } .tone-sarcastic { background-color: #f0e68c; color: #665c00; } .tone-confused { background-color: #e0e0e0; color: #5c636a; } .tone-demanding { background-color: #f8d7da; color: #721c24; } .tone-encouraging { background-color: #d1e7dd; color: #0f5132; } .tone-threatening { background-color: #f5c6cb; color: #721c24; } .tone-dismissive { background-color: #dee2e6; color: #6c757d; }
     
     .spam-badge { padding: 0.35em 0.75em; font-size: 0.75rem; border-radius: 50px; background-color: var(--danger-color); color: white; }
 
@@ -227,6 +214,15 @@
     </div>
   </div>
 
+  <div class="row">
+      <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="card-title">Tone Analysis</h5></div>
+            <div class="card-body"><div class="chart-container" style="height: 350px;"><canvas id="toneAnalysisChart"></canvas></div></div>
+        </div>
+      </div>
+  </div>
+
   <div class="card mb-4">
     <div class="card-header"><h5 class="card-title">User Management</h5></div>
     <div class="table-responsive">
@@ -260,22 +256,31 @@
           <table class="table align-middle">
             <thead><tr><th>From</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {% for email in internal_emails %}
-              <tr>
-                <td>{{ email.sender_email }}</td>
-                <td class="text-truncate" style="max-width: 150px;">{{ email.subject }}</td>
-                <td>
-                  {% if email.tone %}<span class="tone-badge tone-{{ email.tone|lower }}">{{ email.tone }}</span>{% endif %}
-                  {% if email.is_spam %}<span class="spam-badge ms-1">SPAM</span>{% endif %}
-                </td>
-                <td>
-                  <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-view" onclick="viewEmail('{{ email.id }}', '{{ email.sender_email }}', '{{ email.recipient_email }}', '{{ email.subject }}', '{{ email.sent_at }}', `{{ email.body }}`, '{{ email.tone }}', '{{ email.is_spam }}', `{{ email.summary if email.summary else '' }}`)"><i class="bi bi-eye"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteEmail('{{ email.id }}')"><i class="bi bi-trash"></i></button>
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
+              {% if internal_emails %}
+                {% for email in internal_emails %}
+                <tr>
+                  <td>{{ email.sender_email }}</td>
+                  <td class="text-truncate" style="max-width: 150px;">{{ email.subject }}</td>
+                  <td>
+                    {% if email.tone %}<span class="tone-badge tone-{{ email.tone|lower }}">{{ email.tone }}</span>{% endif %}
+                    {% if email.is_spam %}<span class="spam-badge ms-1">SPAM</span>{% endif %}
+                  </td>
+                  <td>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-sm btn-view" onclick="viewEmail('{{ email.id }}', '{{ email.sender_email }}', '{{ email.recipient_email }}', '{{ email.subject }}', '{{ email.sent_at }}', `{{ email.body }}`, '{{ email.tone }}', '{{ email.is_spam }}', `{{ email.summary if email.summary else '' }}`)"><i class="bi bi-eye"></i></button>
+                      <button class="btn btn-sm btn-danger" onclick="confirmDeleteEmail('{{ email.id }}')"><i class="bi bi-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-5">
+                    <i class="bi bi-envelope-slash fs-2"></i>
+                    <p class="mt-2 mb-0">No internal emails found.</p>
+                  </td>
+                </tr>
+              {% endif %}
             </tbody>
           </table>
         </div>
@@ -288,22 +293,31 @@
           <table class="table align-middle">
             <thead><tr><th>From</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {% for email in external_emails %}
-              <tr>
-                <td>{{ email.sender_email }}</td>
-                <td class="text-truncate" style="max-width: 150px;">{{ email.subject }}</td>
-                <td>
-                  {% if email.tone %}<span class="tone-badge tone-{{ email.tone|lower }}">{{ email.tone }}</span>{% endif %}
-                  {% if email.is_spam %}<span class="spam-badge ms-1">SPAM</span>{% endif %}
-                </td>
-                <td>
-                  <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-view" onclick="viewEmail('{{ email.id }}', '{{ email.sender_email }}', '{{ email.recipient_email }}', '{{ email.subject }}', '{{ email.sent_at }}', `{{ email.body }}`, '{{ email.tone }}', '{{ email.is_spam }}', `{{ email.summary if email.summary else '' }}`)"><i class="bi bi-eye"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteEmail('{{ email.id }}')"><i class="bi bi-trash"></i></button>
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
+              {% if external_emails %}
+                {% for email in external_emails %}
+                <tr>
+                  <td>{{ email.sender_email }}</td>
+                  <td class="text-truncate" style="max-width: 150px;">{{ email.subject }}</td>
+                  <td>
+                    {% if email.tone %}<span class="tone-badge tone-{{ email.tone|lower }}">{{ email.tone }}</span>{% endif %}
+                    {% if email.is_spam %}<span class="spam-badge ms-1">SPAM</span>{% endif %}
+                  </td>
+                  <td>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-sm btn-view" onclick="viewEmail('{{ email.id }}', '{{ email.sender_email }}', '{{ email.recipient_email }}', '{{ email.subject }}', '{{ email.sent_at }}', `{{ email.body }}`, '{{ email.tone }}', '{{ email.is_spam }}', `{{ email.summary if email.summary else '' }}`)"><i class="bi bi-eye"></i></button>
+                      <button class="btn btn-sm btn-danger" onclick="confirmDeleteEmail('{{ email.id }}')"><i class="bi bi-trash"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-5">
+                    <i class="bi bi-envelope-slash fs-2"></i>
+                    <p class="mt-2 mb-0">No external emails found.</p>
+                  </td>
+                </tr>
+              {% endif %}
             </tbody>
           </table>
         </div>
@@ -438,7 +452,49 @@ new Chart(sourceCtx, {
       borderColor: '#ffffff', borderWidth: 2, hoverOffset: 15
     }]
   },
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)' } }, cutout: '70%' }
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', callbacks: { label: (c) => `${c.label}: ${c.raw} (${((c.raw/c.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(0)}%)` } } }, cutout: '70%' }
+});
+
+const toneCtx = document.getElementById('toneAnalysisChart');
+new Chart(toneCtx, {
+  type: 'bar',
+  data: {
+    labels: {{ tone_data.labels | tojson }},
+    datasets: [{
+      label: 'Email Count',
+      data: {{ tone_data.counts }},
+      backgroundColor: 'rgba(67, 97, 238, 0.8)',
+      borderColor: 'rgba(67, 97, 238, 1)',
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      }
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            ticks: {
+                stepSize: 1,
+                precision: 0
+            }
+        },
+        x: {
+            grid: {
+                display: false
+            }
+        }
+    }
+  }
 });
 </script>
 </body>

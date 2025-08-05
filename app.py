@@ -6,11 +6,12 @@ import re
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-from backend.llama_utils import generate_llama_response, classify_email_tone, detect_spam, summarize_email
+from backend.llama_utils import generate_llama_response, classify_email_tone, detect_spam, summarize_email, rewrite_email_tone
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr
+from collections import Counter
 
 app = Flask(__name__)
 app.secret_key = 'your_super_secret_key_here'
@@ -287,8 +288,6 @@ def sender_dashboard():
         emails=all_sent  # Combined list
     )
 
-
-
 @app.route('/admin_dashboard')
 def admin_dashboard():
     if 'user_id' not in session or not session.get('is_admin'):
@@ -323,11 +322,32 @@ def admin_dashboard():
     # Stats
     stats = {
         "active_users": cur.execute('SELECT COUNT(*) FROM users WHERE is_active = 1').fetchone()[0],
-        "total_emails": cur.execute('SELECT COUNT(*) FROM emails').fetchone()[0] + 
-                        cur.execute('SELECT COUNT(*) FROM external_emails').fetchone()[0],
+        "total_emails": len(internal_emails) + len(external_emails),
         "spam_emails": cur.execute('SELECT COUNT(*) FROM emails WHERE is_spam = 1').fetchone()[0] +
                        cur.execute('SELECT COUNT(*) FROM external_emails WHERE is_spam = 1').fetchone()[0],
         "read_emails": cur.execute('SELECT COUNT(*) FROM emails WHERE opened_at IS NOT NULL').fetchone()[0]
+    }
+
+    # --- UPDATED CODE FOR TONE ANALYSIS CHART ---
+    
+    # 1. Define all possible tones to ensure they always appear on the chart
+    ALL_TONES = sorted([
+        "polite", "urgent", "neutral", "formal", "angry", "friendly", "apologetic",
+        "appreciative", "sarcastic", "confused", "demanding", "encouraging",
+        "threatening", "dismissive"
+    ])
+    
+    # 2. Count the tones that actually exist in the emails
+    all_emails = internal_emails + external_emails
+    existing_tone_counts = Counter(email['tone'] for email in all_emails if email.get('tone'))
+    
+    # 3. Build the final lists, using a count of 0 for tones that don't exist
+    final_tone_counts = [existing_tone_counts.get(tone, 0) for tone in ALL_TONES]
+
+    # 4. Create the final dictionary to pass to the template
+    tone_data = {
+        'labels': [tone.capitalize() for tone in ALL_TONES],
+        'counts': final_tone_counts
     }
 
     conn.close()
@@ -338,7 +358,8 @@ def admin_dashboard():
         stats=stats,
         internal_emails=internal_emails,
         external_emails=external_emails,
-        current_user=session.get('email')
+        current_user=session.get('email'),
+        tone_data=tone_data 
     )
 
 
@@ -381,21 +402,16 @@ def llama_generate_spam():
 
 @app.route('/summarize_email/<int:email_id>')
 def summarize_email_by_id(email_id):
-    """
-    Summarize an email from DB by its id, matching JS inbox fetch(`/summarize_email/${id}`).
-    """
     if 'user_id' not in session:
         return jsonify({'error': 'Not authenticated'}), 401
     conn = get_db()
     cur = conn.cursor()
-    # Only allow access to their received emails
     user_email = session.get('email')
     cur.execute("SELECT body, summary FROM emails WHERE id = ? AND recipient_email = ?", (email_id, user_email))
     row = cur.fetchone()
     if not row:
         conn.close()
         return jsonify({'error': 'Email not found or not authorized'}), 404
-    # Use precomputed summary if present, else use the llama_utils fallback
     summary = row['summary'] or summarize_email(row['body'])
     conn.close()
     return jsonify({'summary': summary})
@@ -409,51 +425,20 @@ def summarize_email_route():
     summary = summarize_email(email_text)
     return jsonify({"summary": summary})
 
-def send_external_email(to_email, subject, body, sbox_sender_name):
-    sender_email = os.getenv("SENDER_EMAIL")  # Gmail sending account
-    sender_password = os.getenv("EMAIL_PASS") # Gmail App Password
-
-    if not sender_email or not sender_password:
-        print("Error: Missing email credentials in environment variables.")
-        return False
-
-    msg = MIMEMultipart()
-    # Show "John (via Sbox)" as the sender name
-    msg["From"] = formataddr((f"{sbox_sender_name} (via Sbox)", sender_email))
-    msg["To"] = to_email
-    # Add "(Sbox: John)" in subject
-    msg["Subject"] = f"(Sbox: {sbox_sender_name}) {subject}"
-    msg.attach(MIMEText(body, "plain"))
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, to_email, msg.as_string())
-        return True
-    except Exception as e:
-        print("Error sending Gmail:", e)
-        return False
 
 @app.route("/admin/delete_email/<int:email_id>", methods=["DELETE"])
 def delete_email(email_id):
     try:
         conn = get_db()
         cur = conn.cursor()
-
-        # Delete the email
         cur.execute("DELETE FROM emails WHERE id = ?", (email_id,))
         conn.commit()
-
         if cur.rowcount == 0:
-            # No email found with given ID
             return jsonify({"status": "error", "message": "Email not found"}), 404
-
         return jsonify({"status": "success", "message": "Email deleted successfully"}), 200
-
     except Exception as e:
         print("Error deleting email:", e)
         return jsonify({"status": "error", "message": "Server error"}), 500
-
     finally:
         conn.close()
 
@@ -481,6 +466,7 @@ def received_emails():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
 @app.route('/mark_email_read/<int:email_id>', methods=['POST'])
 def mark_email_read(email_id):
     if 'user_id' not in session:
@@ -498,7 +484,6 @@ def mark_email_read(email_id):
 
     conn.commit()
 
-    # Fetch tone & spam info for modal update
     cur.execute("SELECT tone, is_spam FROM emails WHERE id = ?", (email_id,))
     row = cur.fetchone()
     conn.close()
@@ -509,6 +494,18 @@ def mark_email_read(email_id):
         'tone': row['tone'] if row else None,
         'is_spam': bool(row['is_spam']) if row else False
     })
+
+@app.route('/rewrite_tone', methods=['POST'])
+def rewrite_tone_route():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    data = request.json
+    text = data.get('text')
+    tone = data.get('tone')
+    if not text or not tone:
+        return jsonify({'error': 'Missing text or tone'}), 400
+    rewritten_text = rewrite_email_tone(text, tone)
+    return jsonify({'rewritten_text': rewritten_text})
 
 if __name__ == '__main__':
     app.run(debug=True)

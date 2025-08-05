@@ -39,10 +39,10 @@ def generate_llama_response(prompt: str, max_tokens=64):
 def classify_email_tone(email_text: str) -> str:
     prompt = (
         "You are a tone classifier. Respond with the main emotional tone present in the email, "
-        "only from the following list: polite, urgent, neutral, formal, "
+        "only 1 from the following list: polite, urgent, neutral, formal, "
         "angry, friendly, apologetic, appreciative, sarcastic, confused, demanding, encouraging, "
         "threatening, dismissive.\n"
-        "Do not explain, just list the tone.\n\n"
+        "Do not explain, just name the main tone.\n\n"
         f"Email: {email_text.strip()}\nAnswer:"
     )
 
@@ -140,3 +140,15 @@ def summarize_email(email_text: str) -> str:
         print("[Summary Raw]:", repr(result))
         return result.strip()
     return "Summary unavailable."
+
+def rewrite_email_tone(text: str, tone: str) -> str:
+    prompt = (
+        f"You are an expert email editor. Rewrite the following email text to have a {tone} tone. "
+        "Keep the core message and meaning the same, but adjust the phrasing, vocabulary, and nuance. "
+        "Respond ONLY with the rewritten email body, and nothing else.\n\n"
+        f"Original Text: \"{text.strip()}\"\n\n"
+        f"Rewritten Text with a {tone} tone also just give the rewritten text no need to say that you have rewritten it and make sure that it is the same word count"
+    )
+    # Give the model more tokens for rewriting longer text
+    result = generate_llama_response(prompt, max_tokens=512)
+    return result if result else "Could not rewrite the text."

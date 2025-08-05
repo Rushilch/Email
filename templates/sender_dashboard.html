@@ -4,27 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SmartInbox - Sender Dashboard</title>
-    <!-- Bootstrap CSS -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    />
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
-    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: #4361ee;
             --secondary-color: #3f37c9;
             --success-color: #4cc9f0;
             --light-bg: #f8f9fa;
-            --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --border-color: #e5e7eb;
         }
 
         body {
             background-color: var(--light-bg);
-            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         .navbar {
@@ -32,541 +29,234 @@
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         }
 
-        .navbar-brand {
-            font-weight: 600;
-            letter-spacing: 0.5px;
+        .card {
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
         }
 
-        .tone-badge {
-            font-size: 0.8rem;
-            padding: 0.35em 0.65em;
-            border-radius: 0.25rem;
-            font-weight: 500;
-        }
+        .tone-badge { font-size: 0.8rem; padding: 0.35em 0.65em; border-radius: 0.25rem; font-weight: 500; }
+        .tone-polite { background-color: #d1e7dd; color: #0f5132; }
+        .tone-urgent { background-color: #fff3cd; color: #664d03; } 
+        .tone-formal { background-color: #cfe2ff; color: #084298; }
+        .tone-neutral { background-color: #e2e3e5; color: #41464b; }
+        .tone-angry { background-color: #f8d7da; color: #842029; } 
+        .tone-friendly { background-color: #cff4fc; color: #055160; }
+        .tone-apologetic { background-color: #fefefe; color: #856404; border: 1px solid #ffeeba; } 
+        .tone-appreciative { background-color: #e2f0d9; color: #2e7d32; } 
+        .tone-sarcastic { background-color: #f0e68c; color: #665c00; } 
+        .tone-confused { background-color: #e0e0e0; color: #5c636a; } 
+        .tone-demanding { background-color: #f8d7da; color: #721c24; }
+        .tone-encouraging { background-color: #d1e7dd; color: #0f5132; }
+        .tone-threatening { background-color: #f5c6cb; color: #721c24; }
+        .tone-dismissive { background-color: #dee2e6; color: #6c757d; }
+        
+        .email-card { transition: all 0.2s ease; border-left: 4px solid transparent; border-radius: 0.5rem; }
+        .email-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); }
+        .email-card.read { border-left-color: #198754; } .email-card.unread { border-left-color: #0d6efd; }
+        
+        #compose-form textarea { min-height: 200px; }
 
-        .tone-polite {
-            background-color: #d1e7dd;
-            color: #0f5132;
-        }
-        .tone-urgent {
-            background-color: #fff3cd;
-            color: #664d03;
-        }
-        .tone-formal {
-            background-color: #cfe2ff;
-            color: #084298;
-        }
-        .tone-neutral {
-            background-color: #e2e3e5;
-            color: #41464b;
-        }
-        .tone-angry {
-             background-color: #f8d7da;
-            color: #842029;
-        }
-
-        .tone-friendly {
-            background-color: #cff4fc;
-            color: #055160;
-        }
-
-        .tone-apologetic {
-            background-color: #fefefe;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-
-        .tone-appreciative {
-            background-color: #e2f0d9;
-            color: #2e7d32;
-        }
-
-        .tone-sarcastic {
-            background-color: #f0e68c;
-            color: #665c00;
-        }
-
-        .tone-confused {
-            background-color: #e0e0e0;
-            color: #5c636a;
-        }
-
-        .tone-demanding {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .tone-encouraging {
-            background-color: #d1e7dd;
-            color: #0f5132;
-        }
-
-        .tone-threatening {
-            background-color: #f5c6cb;
-            color: #721c24;
-        }
-
-        .tone-dismissive {
-            background-color: #dee2e6;
-            color: #6c757d;
-        }
-
-
-        .email-card {
-            transition: all 0.3s ease, opacity 0.4s ease, transform 0.4s ease;
-            border-left: 4px solid transparent;
-            opacity: 0;
-            transform: translateY(10px);
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        .email-card.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .email-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        .email-card.read {
-            border-left-color: #198754;
-            opacity: 0.9;
-        }
-        .email-card.unread {
-            border-left-color: #0d6efd;
-        }
-
-        #compose-form textarea {
-            min-height: 200px;
-            border-radius: 8px;
+        #rewritten-text-output {
+            min-height: 260px;
+            background-color: #f9fafb;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
             padding: 1rem;
-            border: 1px solid #dee2e6;
-            transition: border-color 0.2s;
-        }
-        #compose-form textarea:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.15);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #374151;
         }
 
-        .read-status {
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .spam-badge {
-            font-size: 0.75rem;
-            letter-spacing: 0.5px;
-            padding: 0.35em 0.65em;
-            border-radius: 50px;
-        }
-
-        /* Toast container positioning */
-        .toast-container-fixed {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            z-index: 1050;
-        }
+        .toast-container-fixed { position: fixed; bottom: 1rem; right: 1rem; z-index: 1050; }
     </style>
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="#">
-                <i class="bi bi-envelope-open me-2"></i> SmartInbox
-            </a>
+            <a class="navbar-brand d-flex align-items-center" href="#"><i class="bi bi-envelope-open me-2"></i> SmartInbox</a>
             <div class="d-flex align-items-center">
-                <span class="text-white me-3">
-                    <i class="bi bi-person-circle me-1"></i> {{ current_user }}
-                </span>
-                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-box-arrow-right me-1"></i> Logout
-                </a>
+                <span class="text-white me-3"><i class="bi bi-person-circle me-1"></i> {{ current_user }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right me-1"></i> Logout</a>
             </div>
         </div>
     </nav>
 
     <div class="container py-4">
         <div class="row">
-            <!-- Left column: Compose & LLaMA Analysis -->
-            <div class="col-lg-4">
-                <!-- Compose Email Card -->
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0 d-flex align-items-center">
-                            <i class="bi bi-pencil-square me-2"></i> Compose Email
-                        </h5>
-                    </div>
+            <div class="col-lg-5">
+                <div class="card mb-4">
+                    <div class="card-header bg-white"><h5 class="mb-0 fw-semibold"><i class="bi bi-pencil-square me-2"></i> Compose Email</h5></div>
                     <div class="card-body">
                         <form id="compose-form">
                             <input type="hidden" id="sender_id" value="{{ current_id }}" />
-                            <div class="mb-3">
-                                <label class="form-label fw-medium">To</label>
-                                <input
-                                    type="email"
-                                    id="recipient"
-                                    class="form-control"
-                                    placeholder="name@example.com"
-                                    required
-                                />
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-medium">Subject</label>
-                                <input
-                                    type="text"
-                                    id="subject"
-                                    class="form-control"
-                                    placeholder="Your email subject"
-                                />
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-medium">Message</label>
-                                <textarea
-                                    id="body"
-                                    class="form-control"
-                                    placeholder="Write your message here..."
-                                    required
-                                ></textarea>
-                            </div>
-                            <div id="tone-feedback" class="mb-3"></div>
-                            <button
-                                type="button"
-                                id="send-btn"
-                                class="btn btn-primary w-100"
-                            >
-                                <i class="bi bi-send me-2"></i> Send Email
-                            </button>
+                            <div class="mb-3"><label class="form-label fw-medium">To</label><input type="email" id="recipient" class="form-control" placeholder="name@example.com" required/></div>
+                            <div class="mb-3"><label class="form-label fw-medium">Subject</label><input type="text" id="subject" class="form-control" placeholder="Your email subject"/></div>
+                            <div class="mb-3"><label class="form-label fw-medium">Message</label><textarea id="body" class="form-control" placeholder="Write your message here..." required></textarea></div>
+                            <button type="button" id="send-btn" class="btn btn-primary w-100 fw-medium"><i class="bi bi-send me-2"></i> Send Email</button>
                         </form>
                     </div>
                 </div>
 
-                <!-- LLaMA Analysis Card -->
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0 d-flex align-items-center">
-                            <i class="bi bi-brain me-2"></i> LLaMA Analysis
-                        </h5>
-                    </div>
+                <div class="card mb-4">
+                    <div class="card-header bg-white"><h5 class="mb-0 fw-semibold"><i class="bi bi-brain me-2"></i> AI Analysis</h5></div>
                     <div class="card-body">
-                        <button
-                            id="analyze-btn"
-                            class="btn btn-outline-secondary w-100 mb-3"
-                        >
-                            <i class="bi bi-search"></i> Analyze with Llama 3.2 3b
-                        </button>
+                        <button id="analyze-btn" class="btn btn-outline-secondary w-100 mb-3"><i class="bi bi-search"></i> Analyze Tone & Spam</button>
                         <div id="llama-result" style="display: none;">
-                            <div class="mb-2">
-                                <strong>Tone:</strong>
-                                <span id="llama-tone" class="tone-badge">—</span>
-                                <small id="llama-tone-confidence" class="text-muted ms-2"></small>
-                            </div>
-                            <div class="mb-2">
-                                <strong>Spam:</strong>
-                                <span id="llama-spam" class="badge">—</span>
-                                <small id="llama-spam-confidence" class="text-muted ms-2"></small>
-                            </div>
+                            <div class="mb-2"><strong>Tone:</strong> <span id="llama-tone" class="tone-badge">—</span></div>
+                            <div class="mb-2"><strong>Spam:</strong> <span id="llama-spam" class="badge">—</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-white"><h5 class="mb-0 fw-semibold"><i class="bi bi-magic me-2"></i> Tone Rewriter</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="rewrite-tone-select" class="form-label fw-medium">Rewrite to this tone:</label>
+                            <select class="form-select" id="rewrite-tone-select">
+                                <option value="polite">Polite</option><option value="formal">Formal</option><option value="friendly">Friendly</option><option value="appreciative">Appreciative</option><option value="apologetic">Apologetic</option><option value="encouraging">Encouraging</option><option value="urgent">Urgent</option><option value="demanding">Demanding</option><option value="sarcastic">Sarcastic</option>
+                            </select>
+                        </div>
+                        <button id="rewrite-btn" class="btn btn-outline-primary w-100"><i class="bi bi-arrow-repeat"></i> Rewrite Message</button>
+                        <div id="rewrite-result-container" class="mt-3" style="display: none;">
+                            <hr>
+                            <label for="rewritten-text-output" class="form-label fw-medium">Suggested Version:</label>
+                            <textarea id="rewritten-text-output" class="form-control" readonly></textarea>
+                            <button id="use-rewritten-text-btn" class="btn btn-success btn-sm w-100 mt-2"><i class="bi bi-check-lg"></i> Use This Version</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right column: Sent Emails List -->
-            <div class="col-lg-8">
-                <div class="card shadow-sm">
-                    <div
-                        class="card-header bg-white d-flex justify-content-between align-items-center"
-                    >
-                        <h5 class="mb-0 d-flex align-items-center">
-                            <i class="bi bi-envelope-paper me-2"></i> Sent Emails
-                        </h5>
-                        <div>
-                            <button
-                                id="refresh-btn"
-                                class="btn btn-sm btn-outline-primary me-2"
-                            >
-                                <i class="bi bi-arrow-clockwise"></i> Refresh
-                            </button>
-                            <a
-                                href="{{ url_for('received_emails') }}"
-                                class="btn btn-sm btn-primary"
-                            >
-                                <i class="bi bi-inbox me-1"></i> Inbox
-                            </a>
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-semibold"><i class="bi bi-envelope-paper me-2"></i> Sent Emails</h5>
+                        <a href="{{ url_for('received_emails') }}" class="btn btn-sm btn-primary"><i class="bi bi-inbox me-1"></i> Inbox</a>
+                    </div>
+                    <div class="card-body p-3" id="emails-list">
+                        {% if emails %}{% for email in emails %}
+                        <div class="email-card card mb-3 {% if email[5] %}read{% else %}unread{% endif %}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="card-title fw-semibold">{{ email[2] or '(No subject)' }}<small class="text-muted fw-normal"> ({{ email[8] }})</small></h6>
+                                    <span class="text-muted small">{{ email[4] }}</span>
+                                </div>
+                                <p class="card-text text-muted mb-2 small">To: {{ email[1] }}</p>
+                                <p class="card-text text-truncate">{{ email[3] }}</p>
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <span class="tone-badge tone-{{ email[7] | lower if email[7] else 'neutral' }}">{{ email[7] or 'Neutral' }}</span>
+                                    {% if email[6] %}<span class="badge bg-danger rounded-pill"><i class="bi bi-exclamation-triangle-fill me-1"></i> SPAM</span>{% endif %}
+                                    <span class="ms-auto small fw-medium">{% if email[5] %}<i class="bi bi-check-circle-fill text-success me-1"></i> Read{% else %}<i class="bi bi-circle text-primary me-1"></i> Unread{% endif %}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="card-body p-3">
-                        <div id="emails-list">
-    {% if emails %}
-        {% for email in emails %}
-            <div class="email-card card mb-3 {% if email[5] %}read{% else %}unread{% endif %}">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <h6 class="card-title">
-                            {{ email[2] or '(No subject)' }}
-                            <small class="text-muted">({{ email[8] }})</small>
-                        </h6>
-                        <span class="text-muted small">
-                            {{ email[4] }}
-                        </span>
-                    </div>
-                    <p class="card-text text-muted mb-2 small">
-                        To: {{ email[1] }}
-                    </p>
-                    <p class="card-text text-truncate">
-                        {{ email[3] }}
-                    </p>
-                    <div class="d-flex flex-wrap align-items-center gap-2">
-                        <span class="tone-badge tone-{{ email[7] | lower if email[7] else 'neutral' }}">
-                            {{ email[7] or 'Neutral' }}
-                        </span>
-                        {% if email[6] %}
-                            <span class="badge bg-danger spam-badge rounded-pill">
-                                <i class="bi bi-exclamation-triangle-fill me-1"></i> SPAM
-                            </span>
+                        {% endfor %}{% else %}
+                        <div class="text-center py-5"><i class="bi bi-envelope-open text-muted" style="font-size: 3rem;"></i><h5 class="mt-3 text-muted">No sent emails yet</h5></div>
                         {% endif %}
-                        <span class="read-status ms-auto small">
-                            {% if email[5] %}
-                                <i class="bi bi-check-circle-fill text-success me-1"></i>
-                                Read at {{ email[5] }}
-                            {% else %}
-                                <i class="bi bi-circle text-primary me-1"></i>
-                                Unread
-                            {% endif %}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-envelope-open text-muted" style="font-size: 3rem;"></i>
-            <h5 class="mt-3 text-muted">No sent emails yet</h5>
-            <p class="text-muted">Send your first email using the compose form</p>
-        </div>
-    {% endif %}
-</div>
-
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div class="toast-container-fixed" id="toast-container"></div>
-
-    <!-- Bootstrap Bundle JS (includes Popper) -->
-    <script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const API_BASE = window.location.origin;
-
-        // Helper: show/hide loading spinner on a button
         function setLoading(button, isLoading) {
+            const originalHtml = button.innerHTML;
             if (isLoading) {
                 button.disabled = true;
-                const originalText = button.textContent.trim();
-                // Prepend spinner
-                button.innerHTML = `
-                    <span
-                        class="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                    ></span>
-                    ${originalText}
-                `;
+                button.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading...`;
             } else {
                 button.disabled = false;
-                // Reset to original icon + text
-                if (button.id === "send-btn") {
-                    button.innerHTML = `<i class="bi bi-send me-2"></i> Send Email`;
-                } else if (button.id === "analyze-btn") {
-                    button.innerHTML = `<i class="bi bi-search"></i> Analyze with Llama 3.2 3b`;
-                }
+                if (button.id === 'send-btn') button.innerHTML = '<i class="bi bi-send me-2"></i> Send Email';
+                if (button.id === 'analyze-btn') button.innerHTML = '<i class="bi bi-search"></i> Analyze Tone & Spam';
+                if (button.id === 'rewrite-btn') button.innerHTML = '<i class="bi bi-arrow-repeat"></i> Rewrite Message';
             }
         }
-
-        // Helper: show a Bootstrap toast
         function showToast(message, type = "info") {
             const toastContainer = document.getElementById("toast-container");
             const toastId = `toast-${Date.now()}`;
-            let bgClass = "bg-info text-white";
-            if (type === "error") bgClass = "bg-danger text-white";
-            else if (type === "success") bgClass = "bg-success text-white";
-
-            const toastHtml = `
-                <div
-                    id="${toastId}"
-                    class="toast align-items-center ${bgClass}"
-                    role="alert"
-                    aria-live="assertive"
-                    aria-atomic="true"
-                    data-bs-delay="3000"
-                >
-                    <div class="d-flex">
-                        <div class="toast-body">${message}</div>
-                        <button
-                            type="button"
-                            class="btn-close btn-close-white me-2 m-auto"
-                            data-bs-dismiss="toast"
-                            aria-label="Close"
-                        ></button>
-                    </div>
-                </div>
-            `;
+            let bgClass = "bg-primary";
+            if (type === "error") bgClass = "bg-danger";
+            else if (type === "success") bgClass = "bg-success";
+            const toastHtml = `<div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div></div>`;
             toastContainer.insertAdjacentHTML("beforeend", toastHtml);
-            const toastEl = document.getElementById(toastId);
-            const toast = new bootstrap.Toast(toastEl);
+            const toast = new bootstrap.Toast(document.getElementById(toastId));
             toast.show();
-            toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            // Fade in each email card
-            const cards = document.querySelectorAll(".email-card");
-            cards.forEach((card, idx) => {
-                setTimeout(() => card.classList.add("visible"), idx * 50);
-            });
-
-            // Send email
             document.getElementById("send-btn").addEventListener("click", async () => {
                 const btn = document.getElementById("send-btn");
-                const recipient = document.getElementById("recipient").value.trim();
-                const subject = document.getElementById("subject").value.trim();
                 const body = document.getElementById("body").value.trim();
-
-                if (!recipient || !body) {
-                    showToast("Recipient and message body are required.", "error");
-                    return;
-                }
-
+                const recipient = document.getElementById("recipient").value.trim();
+                if (!recipient || !body) { showToast("Recipient and message are required.", "error"); return; }
                 setLoading(btn, true);
                 try {
                     const response = await fetch(`${API_BASE}/send`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            sender_id: {{ current_id }},
-                            recipient: recipient,
-                            subject: subject,
-                            body: body,
-                        }),
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ sender_id: {{ current_id }}, recipient, subject: document.getElementById("subject").value.trim(), body }),
                     });
-                    const result = await response.json();
-
-                    if (response.ok) {
-                        showToast(
-                            `Email sent successfully! ${
-                                result.is_spam ? "(Marked as spam)" : ""
-                            }`,
-                            "success"
-                        );
-                        document.getElementById("compose-form").reset();
-                        document.getElementById("tone-feedback").innerHTML = "";
-                        // Reload to update sent list
-                        setTimeout(() => location.reload(), 800);
-                    } else {
-                        throw new Error(result.message || "Failed to send email");
-                    }
-                } catch (error) {
-                    console.error(error);
-                    showToast(`Error: ${error.message}`, "error");
-                } finally {
-                    setLoading(btn, false);
-                }
+                    if (!response.ok) throw new Error('Server error');
+                    showToast("Email sent successfully!", "success");
+                    setTimeout(() => location.reload(), 800);
+                } catch (error) { showToast(error.message, "error"); }
+                finally { setLoading(btn, false); }
             });
 
-            // Refresh emails
-            document.getElementById("refresh-btn").addEventListener("click", () => {
-                location.reload();
-            });
-
-            // Auto-refresh read status every 30 seconds
-            setInterval(async () => {
-                try {
-                    const response = await fetch(
-                        `${API_BASE}/sent_emails?sender_id={{ current_id }}`
-                    );
-                    const emails = await response.json();
-
-                    emails.forEach((email) => {
-                        const emailElement = document.querySelector(
-                            `.email-card[data-email-id="${email.id}"]`
-                        );
-                        if (emailElement) {
-                            const readStatus = emailElement.querySelector(".read-status");
-                            if (email.opened_at) {
-                                emailElement.classList.remove("unread");
-                                emailElement.classList.add("read");
-                                const readDate = new Date(email.opened_at);
-                                readStatus.innerHTML = `
-                                    <i class="bi bi-check-circle-fill text-success"></i>
-                                    Read at ${readDate.toLocaleString()}
-                                `;
-                            }
-                        }
-                    });
-                } catch (error) {
-                    console.error("Error refreshing email status:", error);
-                }
-            }, 30000);
-
-            // LLaMA Analysis
             document.getElementById("analyze-btn").addEventListener("click", async () => {
                 const btn = document.getElementById("analyze-btn");
                 const body = document.getElementById("body").value.trim();
-                if (!body) {
-                    showToast("Please write an email body first.", "error");
-                    return;
-                }
-
+                if (!body) { showToast("Please write a message to analyze.", "error"); return; }
                 setLoading(btn, true);
                 try {
-                    // Batch both calls in parallel
                     const [toneRes, spamRes] = await Promise.all([
-                        fetch(`${API_BASE}/llama_generate_tone`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ text: body }),
-                        }),
-                        fetch(`${API_BASE}/llama_generate_spam`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ text: body }),
-                        }),
+                        fetch(`${API_BASE}/llama_generate_tone`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: body }) }),
+                        fetch(`${API_BASE}/llama_generate_spam`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: body }) })
                     ]);
                     const toneData = await toneRes.json();
                     const spamData = await spamRes.json();
-
                     const tone = toneData.tone || "neutral";
-                    const toneConf = toneData.confidence || null;
                     const spam = spamData.spam === true;
-                    const spamConf = spamData.confidence || null;
-
-                    // Update UI
                     document.getElementById("llama-result").style.display = "block";
                     const toneBadge = document.getElementById("llama-tone");
                     toneBadge.textContent = tone.charAt(0).toUpperCase() + tone.slice(1);
-                    toneBadge.className = `tone-badge tone-${tone}`;
-                    document.getElementById("llama-tone-confidence").textContent = toneConf
-                        ? `(${(toneConf * 100).toFixed(1)}%)`
-                        : "";
-
+                    toneBadge.className = `tone-badge tone-${tone.toLowerCase()}`;
                     const spamBadge = document.getElementById("llama-spam");
                     spamBadge.textContent = spam ? "Yes" : "No";
-                    spamBadge.className = `badge ${
-                        spam ? "bg-danger" : "bg-success"
-                    }`;
-                    document.getElementById("llama-spam-confidence").textContent = spamConf
-                        ? `(${(spamConf * 100).toFixed(1)}%)`
-                        : "";
-                } catch (err) {
-                    console.error("LLaMA analysis failed:", err);
-                    showToast("Error analyzing email with LLaMA", "error");
-                } finally {
-                    setLoading(btn, false);
-                }
+                    spamBadge.className = `badge ${spam ? "bg-danger" : "bg-success"}`;
+                } catch (err) { showToast("Error during AI analysis.", "error"); }
+                finally { setLoading(btn, false); }
+            });
+
+            const rewriteBtn = document.getElementById('rewrite-btn');
+            const useRewrittenBtn = document.getElementById('use-rewritten-text-btn');
+            rewriteBtn.addEventListener('click', async () => {
+                const originalText = document.getElementById('body').value.trim();
+                const selectedTone = document.getElementById('rewrite-tone-select').value;
+                if (!originalText) { showToast("Please write a message to rewrite.", "error"); return; }
+                setLoading(rewriteBtn, true);
+                try {
+                    const response = await fetch(`${API_BASE}/rewrite_tone`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: originalText, tone: selectedTone })
+                    });
+                    if (!response.ok) throw new Error('Failed to get rewritten text.');
+                    const result = await response.json();
+                    document.getElementById('rewritten-text-output').value = result.rewritten_text;
+                    document.getElementById('rewrite-result-container').style.display = 'block';
+                } catch (error) { showToast(error.message, "error"); }
+                finally { setLoading(rewriteBtn, false); }
+            });
+
+            useRewrittenBtn.addEventListener('click', () => {
+                document.getElementById('body').value = document.getElementById('rewritten-text-output').value;
+                showToast("Message updated!", "success");
             });
         });
     </script>
