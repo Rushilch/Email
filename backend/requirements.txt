@@ -1,6 +1,6 @@
 flask
 flask-cors
 bcrypt
-
+dotenv
 groq
 

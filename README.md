@@ -1,52 +1,70 @@
+````markdown
+# 📬 MailSense — Smart Email Platform with Groq & LLaMA
 
-# 📬 MailSense — Smart Email Platform with LLaMA-Powered Tone & Spam Detection
+**MailSense** is a secure, modern email web application built with **Flask** and **SQLite**.  
+It combines everyday email features with intelligent tools powered by the **Groq API** and **LLaMA 3.1** for better communication and productivity.
 
-MailSense is a modern, secure, and intelligent email web application that allows users to send, receive, and analyze emails. Built with **Flask**, **SQLite**, and integrated with **LLaMA 3.2 3B GGUF** models for local **tone classification** and **spam detection**, it provides real-time NLP capabilities directly in your inbox.
+---
 
-## ✨ Features
+## ✨ Key Features
 
-- 📨 Send and receive emails between users
-- 🧠 AI-powered tone classification (polite, formal, neutral, urgent)
-- 🚫 Spam detection using LLaMA local inference
-- 📊 Admin dashboard with analytics and email monitoring
-- 📬 Inbox & Sent views with read tracking
-- 🧾 Lightweight SQLite database
-- 🔐 Secure login/register flow with password hashing
-- 🎨 Responsive Bootstrap UI with aesthetic polish
+### 📌 Core Email Features
+- **Secure Login & Registration** — User accounts are protected with Bcrypt password hashing.
+- **Internal & External Messaging** — Send messages to other platform users or external addresses.
+- **Separate Inbox & Sent Views** — Quickly switch between received and sent emails.
+- **Read Receipts** — See when your internal messages are opened.
+
+### 🧠 Smart Tools (Powered by Groq API)
+- **Tone Classification** — Detects one of 14 tones (e.g., Friendly, Urgent, Formal, Apologetic).
+- **Spam Detection** — Automatically flags unwanted or suspicious messages.
+- **Email Summaries** — Generates a quick summary for received messages.
+- **Tone Rewriter** — Adjusts your email tone before sending (e.g., Polite, Sarcastic).
+
+### 📊 Dashboards & Interface
+- **Admin Dashboard**
+  - Overview cards for Active Users, Total Emails, Spam Count, and Read Count.
+  - Charts for email trends, internal vs. external messages, and tone distribution.
+  - Tools to view and manage users and messages.
+- **Clean, Responsive UI** — Built with Bootstrap 5 for an intuitive user experience.
 
 ---
 
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository
-
 ```bash
-git clone https://github.com/Rushilch/Email.git
-cd Email
-````
+git clone https://github.com/your-username/MailSense.git
+cd MailSense
+```
 
-### 2. Set Up the Virtual Environment
+### 2. Create a Virtual Environment & Install Dependencies
 
 ```bash
 python -m venv .venv
-.venv/Scripts/activate  # On Windows
-# Or use: source .venv/bin/activate  # On Mac/Linux
-pip install -r backend/requirements.txt
+# Activate it:
+# Windows:
+.venv\Scripts\activate
+# Mac/Linux:
+source .venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
-### 3. Download the LLaMA Model (Offline Inference)
+### 3. Set Up Environment Variables
 
-> ✅ Recommended Model: [Llama-3.2-3B-Instruct-GGUF](https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF)
+Create a file named `.env` in the project root (`MailSense/.env`):
 
-* Download the file:
-  **`llama-3.2-3b-instruct-q4_k_m.gguf`**
+```env
+# Groq API Key
+GROQ_API="your_gsk_..._api_key"
 
-* Place it inside the project at:
-  `Email/models/llama-3.2-3b-instruct-q4_k_m.gguf`
+# Optional: Email Sending via Gmail
+SENDER_EMAIL="your-gmail@gmail.com"
+EMAIL_PASS="your-gmail-app-password"
+```
 
-> 💡 The app uses [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python) to load and run the model **entirely offline**, no OpenAI API keys needed.
-
----
+> **Note:** Never commit `.env` to version control.
+> Get your Groq API key at: [https://console.groq.com/keys](https://console.groq.com/keys)
 
 ### 4. Run the Application
 
@@ -54,56 +72,61 @@ pip install -r backend/requirements.txt
 python app.py
 ```
 
-The app will start on [http://localhost:5000](http://localhost:5000) by default.
+The app will run at **[http://127.0.0.1:5000](http://127.0.0.1:5000)**.
+
+**Default Admin Login:**
+Email: `admin@sbox.com`
+Password: `admin@123`
 
 ---
 
 ## 🧪 Tech Stack
 
-| Layer         | Tech Used                         |
-| ------------- | --------------------------------- |
-| Backend       | Python, Flask, SQLite             |
-| AI/NLP        | LLaMA 3.2 3B (GGUF via llama-cpp) |
-| Frontend      | HTML, CSS, Bootstrap 5            |
-| Auth/Security | Flask Sessions, Bcrypt            |
-| Deployment    | Local (production-ready layout)   |
+| Layer        | Technologies Used                |
+| ------------ | -------------------------------- |
+| **Backend**  | Python, Flask, SQLite            |
+| **AI/NLP**   | Groq API (LLaMA 3.1 8B)          |
+| **Frontend** | HTML, CSS, Bootstrap 5, Chart.js |
+| **Security** | Flask Sessions, Bcrypt           |
 
 ---
 
-## 🛠️ Folder Structure
+## 📂 Project Structure
 
 ```
-Email/
-├── app.py                  # Main Flask App
+MailSense/
+├── .venv/                 # Virtual environment
+├── .env                   # API keys & config
+├── app.py                 # Main Flask app
 ├── backend/
-│   ├── llama_utils.py      # Model integration utilities
-│   ├── requirements.txt    # All dependencies
-├── templates/              # HTML templates
-├── static/                 # CSS, JS, Icons
-├── models/                 # GGUF LLaMA model goes here
-└── mailsense.db            # SQLite DB (auto-created)
+│   ├── llama_utils.py     # Groq API integration
+│   └── requirements.txt   # Dependencies
+├── templates/             # HTML templates
+│   ├── login.html
+│   ├── register.html
+│   ├── sender_dashboard.html
+│   ├── received_emails.html
+│   └── admin_dashboard.html
+└── Sbox.db                # SQLite database
 ```
 
 ---
 
 ## 📸 Screenshots
 
->
-> * Login
-> * Register
-> * Sender dashboard
-> * Inbox with tone and spam tags
-> * Admin panel
+* **Login Page**
+* **Sender Dashboard** (Compose + AI Tools)
+* **Inbox** (with summaries)
+* **Admin Dashboard** (metrics & charts)
 
 ---
 
----
+## 🔮 Planned Enhancements
 
-## 🧠 Future Improvements
-
-* ✉️ Email scheduling and drafts
-* 📎 File attachments support
+* 📎 File attachments
 * 🌍 Dockerized deployment
-* 📈 Model upgrade to LLaMA 3.2 8B with quantization
+* 🔔 Real‑time new message alerts
+* 📈 Upgrade to LLaMA 3.1 70B for richer AI capabilities
 
----                   
+```
+```
