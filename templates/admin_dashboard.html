@@ -152,7 +152,7 @@
 
 <main class="main-content">
   <header class="header">
-    <h1 class="header-title"><i class="bi bi-shield-lock me-2"></i>SmartInbox Admin</h1>
+    <h1 class="header-title"><i class="bi bi-envelope-open me-2"></i> SmartInbox Admin</h1>
     <div class="header-actions">
       <a href="/logout" class="btn btn-outline-light"><i class="bi bi-box-arrow-right"></i> Logout</a>
     </div>
@@ -463,10 +463,54 @@ new Chart(toneCtx, {
     datasets: [{
       label: 'Email Count',
       data: {{ tone_data.counts }},
-      backgroundColor: 'rgba(67, 97, 238, 0.8)',
-      borderColor: 'rgba(67, 97, 238, 1)',
       borderWidth: 1,
-      borderRadius: 4
+      borderRadius: 4,
+      backgroundColor: function(context) {
+        const label = context.dataset.label || '';
+        const tone = context.dataIndex >= 0 ? context.chart.data.labels[context.dataIndex].toLowerCase() : '';
+        
+        // Return color based on tone
+        switch(tone) {
+          case 'friendly': return '#e0f7fa';
+          case 'angry': return '#ffebee';
+          case 'neutral': return '#eceff1';
+          case 'polite': return '#e8f5e9';
+          case 'urgent': return '#fff3e0';
+          case 'formal': return '#e3f2fd';
+          case 'sarcastic': return '#f3e5f5';
+          case 'confused': return '#efebe9';
+          case 'demanding': return '#fffde7';
+          case 'encouraging': return '#e0f2f1';
+          case 'threatening': return '#ff646452';
+          case 'dismissive': return '#cfd8dc';
+          case 'apologetic': return '#fce4ec';
+          case 'appreciative': return '#fff8e1';
+          default: return 'rgba(67, 97, 238, 0.8)'; // default color
+        }
+      },
+      borderColor: function(context) {
+        const label = context.dataset.label || '';
+        const tone = context.dataIndex >= 0 ? context.chart.data.labels[context.dataIndex].toLowerCase() : '';
+        
+        // Return color based on tone
+        switch(tone) {
+          case 'friendly': return '#00796b';
+          case 'angry': return '#c62828';
+          case 'neutral': return '#455a64';
+          case 'polite': return '#2e7d32';
+          case 'urgent': return '#ef6c00';
+          case 'formal': return '#1565c0';
+          case 'sarcastic': return '#6a1b9a';
+          case 'confused': return '#5d4037';
+          case 'demanding': return '#f9a825';
+          case 'encouraging': return '#00897b';
+          case 'threatening': return '#000000';
+          case 'dismissive': return '#37474f';
+          case 'apologetic': return '#ff3597';
+          case 'appreciative': return '#ff8f00';
+          default: return 'rgba(67, 97, 238, 1)'; // default color
+        }
+      }
     }]
   },
   options: {
