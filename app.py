@@ -281,16 +281,63 @@ def mark_email_read(email_id):
 
 @app.route("/admin/delete_email/<int:email_id>", methods=["DELETE"])
 def delete_email(email_id):
-    # This is a placeholder for deleting internal/external emails
-    # A more robust implementation would check both tables
+    if 'user_id' not in session or not session.get('is_admin'):
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+    
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("DELETE FROM emails WHERE id = ?", (email_id,))
-    cur.execute("DELETE FROM external_emails WHERE id = ?", (email_id,))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success"})
+    try:
+        # Try deleting from internal emails
+        cur.execute("DELETE FROM emails WHERE id = ?", (email_id,))
+        internal_rows_deleted = cur.rowcount
+        
+        # Try deleting from external emails
+        cur.execute("DELETE FROM external_emails WHERE id = ?", (email_id,))
+        external_rows_deleted = cur.rowcount
+        
+        conn.commit()
 
+        if internal_rows_deleted > 0 or external_rows_deleted > 0:
+            return jsonify({'status': 'success', 'message': 'Email deleted successfully'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Email not found'}), 404
+            
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    finally:
+        conn.close()
 
+@app.route('/admin/delete_user/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    if not session.get('is_admin'):
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        # Prevent admin from deleting themselves
+        if user_id == session.get('user_id'):
+             return jsonify({'status': 'error', 'message': 'Admin cannot delete their own account'}), 400
+
+        # Delete associated emails first
+        cur.execute("DELETE FROM emails WHERE sender_id = ?", (user_id,))
+        cur.execute("DELETE FROM external_emails WHERE sender_id = ?", (user_id,))
+        
+        # Delete the user
+        cur.execute("DELETE FROM users WHERE id = ? AND is_admin = 0", (user_id,))
+        
+        if cur.rowcount == 0:
+            return jsonify({'status': 'error', 'message': 'User not found or is an admin'}), 404
+            
+        conn.commit()
+        return jsonify({'status': 'success', 'message': 'User and their emails have been deleted.'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    finally:
+        conn.close()
+
+        
 if __name__ == '__main__':
     app.run(debug=True)

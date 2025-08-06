@@ -1,158 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartInbox Admin Dashboard</title>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    :root {
-      /* Base colors from the stable version */
-      --bs-blue: #0d6efd;
-      --bs-indigo: #6610f2;
-      --bs-purple: #6f42c1;
-      --bs-pink: #d63384;
-      --bs-red: #dc3545;
-      --bs-orange: #fd7e14;
-      --bs-yellow: #ffc107;
-      --bs-green: #198754;
-      --bs-teal: #20c997;
-      --bs-cyan: #0dcaf0;
-      
-      /* New theme colors from example */
-      --theme-primary: #4361ee;
-      --theme-secondary: #3f37c9;
-      --theme-success: #4cc9f0;
-
-      /* General variables */
-      --light-bg: #f8f9fa;
-      --card-bg: #ffffff;
-      --text-primary: #0f172a;
-      --text-secondary: #64748b;
-      --text-muted: #94a3b8;
-      --border-color: #e2e8f0;
-      --danger-color: #ef4444;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      --radius: 0.5rem;
-      --radius-lg: 0.75rem;
-      --transition: all 0.2s ease-in-out;
-    }
-
-    body {
-      background-color: var(--light-bg);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      color: var(--text-primary);
-      line-height: 1.5;
-    }
-
-    .main-content { padding: 2rem; }
-
-    /* Blue Header */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-      background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
-      color: white;
-      padding: 1.25rem 2rem;
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
-    }
-    .header-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: white;
-    }
-    .header-actions { display: flex; gap: 1rem; }
-
-    /* Stats Cards */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .stat-card {
-      background: var(--card-bg);
-      border-radius: var(--radius-lg);
-      padding: 1.5rem;
-      box-shadow: var(--shadow);
-      transition: var(--transition);
-      border-left: 4px solid var(--theme-primary);
-    }
-    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-    .stat-title { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
-    .stat-value { font-weight: 700; font-size: 1.75rem; }
-    .stat-change { font-size: 0.75rem; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; }
-    .stat-change.positive { color: var(--bs-green); }
-    .stat-change.negative { color: var(--danger-color); }
-
-    /* Cards & Tables */
-    .card { background: var(--card-bg); border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow); margin-bottom: 2rem; }
-    .card-header { background: var(--card-bg); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); }
-    .card-title { font-weight: 600; font-size: 1.125rem; margin-bottom: 0; }
-    .table thead th { background-color: #f1f5f9; color: var(--text-secondary); padding: 1rem 1.25rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
-    .table tbody td { padding: 1rem 1.25rem; vertical-align: middle; font-size: 0.875rem; border-bottom: 1px solid var(--border-color); }
-    .table tbody tr:last-child td { border-bottom: none; }
-
-    /* Badges */
-    .badge {
-      font-weight: 500;
-      padding: 0.4em 0.75em;
-      font-size: 0.75rem;
-      letter-spacing: 0.5px;
-      border-radius: 50px;
-    }
-    .badge-admin {
-      background-color: var(--bs-purple);
-      color: white;
-    }
-    
-    .tone-badge {
-      font-size: 0.8rem;
-      padding: 0.35em 0.65em;
-      border-radius: 0.25rem;
-      font-weight: 500;
-      text-transform: capitalize;
-    }
-    .tone-polite { background-color: #d1e7dd; color: #0f5132; } .tone-urgent { background-color: #fff3cd; color: #664d03; } .tone-formal { background-color: #cfe2ff; color: #084298; } .tone-neutral { background-color: #e2e3e5; color: #41464b; } .tone-angry { background-color: #f8d7da; color: #842029; } .tone-friendly { background-color: #cff4fc; color: #055160; } .tone-apologetic { background-color: #fefefe; color: #856404; border: 1px solid #ffeeba; } .tone-appreciative { background-color: #e2f0d9; color: #2e7d32; } .tone-sarcastic { background-color: #f0e68c; color: #665c00; } .tone-confused { background-color: #e0e0e0; color: #5c636a; } .tone-demanding { background-color: #f8d7da; color: #721c24; } .tone-encouraging { background-color: #d1e7dd; color: #0f5132; } .tone-threatening { background-color: #f5c6cb; color: #721c24; } .tone-dismissive { background-color: #dee2e6; color: #6c757d; }
-    
-    .spam-badge { padding: 0.35em 0.75em; font-size: 0.75rem; border-radius: 50px; background-color: var(--danger-color); color: white; }
-
-    /* Buttons */
-    .btn { font-weight: 500; border-radius: var(--radius); transition: var(--transition); }
-    .btn-view { background-color: var(--bs-green); border-color: var(--bs-green); color: white; }
-    .btn-view:hover { background-color: #157347; border-color: #146c43; color: white; }
-
-    /* Modals */
-    .modal-header { background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary)); color: white; }
-    .modal-body { padding: 2rem; }
-    .modal-footer { background-color: #f8fafc; border-top: 1px solid var(--border-color); }
-    .modal-email-header { padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
-    .modal-email-subject { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
-    .modal-email-meta { font-size: 0.875rem; color: var(--text-secondary); }
-    .modal-email-tags { margin-top: 1rem; display: flex; gap: 0.5rem; }
-    .summary-box { background: #f8fafc; border-left: 4px solid var(--theme-primary); padding: 1.25rem; margin: 1.5rem 0; }
-    .summary-box h6 { font-weight: 600; color: var(--theme-primary); }
-    .email-content { background: #f8fafc; padding: 1.5rem; margin-top: 1.5rem; white-space: pre-wrap; }
-    
-    /* Chart */
-    .chart-container { position: relative; height: 320px; width: 100%; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartInbox Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bs-purple: #6f42c1;
+            --bs-green: #198754;
+            --bs-cyan: #0dcaf0;
+            --theme-primary: #4361ee;
+            --theme-secondary: #3f37c9;
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --danger-color: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 0.5rem;
+            --radius-lg: 0.75rem;
+            --transition: all 0.2s ease-in-out;
+        }
+        body { background-color: var(--light-bg); font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .main-content { padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary)); color: white; padding: 1.25rem 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+        .header-title { font-size: 1.5rem; font-weight: 600; color: white; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--card-bg); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow); transition: var(--transition); border-left: 4px solid var(--theme-primary); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .stat-title { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .stat-value { font-weight: 700; font-size: 1.75rem; }
+        .card { background: var(--card-bg); border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow); margin-bottom: 2rem; }
+        .card-header { background: var(--card-bg); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .card-title { font-weight: 600; font-size: 1.125rem; margin-bottom: 0; }
+        .table thead th { background-color: #f1f5f9; color: var(--text-secondary); }
+        .table tbody td { vertical-align: middle; }
+        .badge { font-weight: 500; padding: 0.4em 0.75em; font-size: 0.75rem; border-radius: 50px; }
+        .badge-admin { background-color: var(--bs-purple); color: white; }
+        .tone-badge { font-size: 0.8rem; padding: 0.35em 0.65em; border-radius: 0.25rem; font-weight: 500; text-transform: capitalize; }
+        .tone-polite { background-color: #d1e7dd; color: #0f5132; } .tone-urgent { background-color: #fff3cd; color: #664d03; } .tone-formal { background-color: #cfe2ff; color: #084298; } .tone-neutral { background-color: #e2e3e5; color: #41464b; } .tone-angry { background-color: #f8d7da; color: #842029; } .tone-friendly { background-color: #cff4fc; color: #055160; } .tone-apologetic { background-color: #fefefe; color: #856404; border: 1px solid #ffeeba; } .tone-appreciative { background-color: #e2f0d9; color: #2e7d32; } .tone-sarcastic { background-color: #f0e68c; color: #665c00; } .tone-confused { background-color: #e0e0e0; color: #5c636a; } .tone-demanding { background-color: #f8d7da; color: #721c24; } .tone-encouraging { background-color: #d1e7dd; color: #0f5132; } .tone-threatening { background-color: #f5c6cb; color: #721c24; } .tone-dismissive { background-color: #dee2e6; color: #6c757d; }
+        .spam-badge { padding: 0.35em 0.75em; font-size: 0.75rem; border-radius: 50px; background-color: var(--danger-color); color: white; }
+        .btn-view { background-color: var(--bs-green); border-color: var(--bs-green); color: white; }
+        .btn-view:hover { background-color: #00ff3c96; border-color: #000000;color:#000000; }
+        .modal-header { background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary)); color: white; }
+        .chart-container { position: relative; height: 320px; width: 100%; }
+    </style>
 </head>
 <body>
 
 <main class="main-content">
   <header class="header">
-    <h1 class="header-title"><i class="bi bi-envelope-open me-2"></i> SmartInbox Admin</h1>
+    <h1 class="header-title"><i class="bi bi-shield-lock me-2"></i> SmartInbox Admin</h1>
     <div class="header-actions">
       <a href="/logout" class="btn btn-outline-light"><i class="bi bi-box-arrow-right"></i> Logout</a>
     </div>
@@ -160,40 +64,20 @@
 
   <div class="stats-grid mb-4">
     <div class="stat-card">
-      <div class="stat-title"><i class="bi bi-people"></i> Active Users</div>
-      <div class="stat-value">{{ stats.active_users }}</div>
-      {% if 'active_users_change' in stats %}
-      <div class="stat-change {% if stats.active_users_change >= 0 %}positive{% else %}negative{% endif %}">
-        <i class="bi bi-arrow-{% if stats.active_users_change >= 0 %}up{% else %}down{% endif %}"></i> {{ stats.active_users_change }}%
-      </div>
-      {% endif %}
+        <div class="stat-title"><i class="bi bi-people"></i> Active Users</div>
+        <div class="stat-value">{{ stats.active_users }}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-title"><i class="bi bi-envelope"></i> Total Emails</div>
-      <div class="stat-value">{{ stats.total_emails }}</div>
-      {% if 'total_emails_change' in stats %}
-      <div class="stat-change {% if stats.total_emails_change >= 0 %}positive{% else %}negative{% endif %}">
-        <i class="bi bi-arrow-{% if stats.total_emails_change >= 0 %}up{% else %}down{% endif %}"></i> {{ stats.total_emails_change }}%
-      </div>
-      {% endif %}
+        <div class="stat-title"><i class="bi bi-envelope"></i> Total Emails</div>
+        <div class="stat-value">{{ stats.total_emails }}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-title"><i class="bi bi-shield-exclamation"></i> Spam Emails</div>
-      <div class="stat-value">{{ stats.spam_emails }}</div>
-      {% if 'spam_emails_change' in stats %}
-       <div class="stat-change {% if stats.spam_emails_change >= 0 %}positive{% else %}negative{% endif %}">
-        <i class="bi bi-arrow-{% if stats.spam_emails_change >= 0 %}up{% else %}down{% endif %}"></i> {{ stats.spam_emails_change }}%
-      </div>
-      {% endif %}
+        <div class="stat-title"><i class="bi bi-shield-exclamation"></i> Spam Emails</div>
+        <div class="stat-value">{{ stats.spam_emails }}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-title"><i class="bi bi-envelope-open"></i> Read Emails</div>
-      <div class="stat-value">{{ stats.read_emails }}</div>
-      {% if 'read_emails_change' in stats %}
-      <div class="stat-change {% if stats.read_emails_change >= 0 %}positive{% else %}negative{% endif %}">
-        <i class="bi bi-arrow-{% if stats.read_emails_change >= 0 %}up{% else %}down{% endif %}"></i> {{ stats.read_emails_change }}%
-      </div>
-      {% endif %}
+        <div class="stat-title"><i class="bi bi-envelope-open"></i> Read Emails</div>
+        <div class="stat-value">{{ stats.read_emails }}</div>
     </div>
   </div>
 
@@ -231,16 +115,16 @@
         <tbody>
           {% for user in users %}
           <tr>
-            <td>{{ user[0] }}</td>
+            <td>{{ user.id }}</td>
             <td>
               <div class="d-flex align-items-center gap-2">
                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="bi bi-person"></i></div>
-                <span>{{ user[1] }}</span>
+                <span>{{ user.email }}</span>
               </div>
             </td>
-            <td>{% if user[2] %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
-            <td>{% if user[3] %}<span class="badge badge-admin">Admin</span>{% else %}<span class="badge bg-primary">User</span>{% endif %}</td>
-            <td><div class="d-flex gap-2">{% if not user[3] %}<button class="btn btn-sm btn-danger" onclick="confirmDeleteUser('{{ user[0] }}')"><i class="bi bi-trash"></i></button>{% endif %}</div></td>
+            <td>{% if user.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+            <td>{% if user.is_admin %}<span class="badge badge-admin">Admin</span>{% else %}<span class="badge bg-primary">User</span>{% endif %}</td>
+            <td><div class="d-flex gap-2">{% if not user.is_admin %}<button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteUser('{{ user.id }}', '{{ user.email }}')"><i class="bi bi-trash"></i></button>{% endif %}</div></td>
           </tr>
           {% endfor %}
         </tbody>
@@ -254,33 +138,25 @@
         <div class="card-header"><h5 class="card-title">Internal Emails</h5></div>
         <div class="table-responsive">
           <table class="table align-middle">
-            <thead><tr><th>From</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>From</th><th>To</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {% if internal_emails %}
-                {% for email in internal_emails %}
-                <tr>
-                  <td>{{ email.sender_email }}</td>
-                  <td class="text-truncate" style="max-width: 150px;">{{ email.subject }}</td>
-                  <td>
-                    {% if email.tone %}<span class="tone-badge tone-{{ email.tone|lower }}">{{ email.tone }}</span>{% endif %}
-                    {% if email.is_spam %}<span class="spam-badge ms-1">SPAM</span>{% endif %}
-                  </td>
-                  <td>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-sm btn-view" onclick="viewEmail('{{ email.id }}', '{{ email.sender_email }}', '{{ email.recipient_email }}', '{{ email.subject }}', '{{ email.sent_at }}', `{{ email.body }}`, '{{ email.tone }}', '{{ email.is_spam }}', `{{ email.summary if email.summary else '' }}`)"><i class="bi bi-eye"></i></button>
-                      <button class="btn btn-sm btn-danger" onclick="confirmDeleteEmail('{{ email.id }}')"><i class="bi bi-trash"></i></button>
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="4" class="text-center text-muted py-5">
-                    <i class="bi bi-envelope-slash fs-2"></i>
-                    <p class="mt-2 mb-0">No internal emails found.</p>
-                  </td>
-                </tr>
-              {% endif %}
+              {% for email in internal_emails %}
+              <tr>
+                <td>{{ email.sender_email }}</td>
+                <td>{{ email.recipient_email }}</td>
+                <td class="text-truncate" style="max-width: 150px;">{{ email.subject }}</td>
+                <td>
+                  {% if email.tone %}<span class="tone-badge tone-{{ email.tone|lower }}">{{ email.tone }}</span>{% endif %}
+                  {% if email.is_spam %}<span class="spam-badge ms-1">SPAM</span>{% endif %}
+                </td>
+                <td>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-view" onclick="viewEmail('{{ email.id }}', '{{ email.sender_email }}', '{{ email.recipient_email }}', '{{ email.subject }}', '{{ email.sent_at }}', `{{ email.body }}`, '{{ email.tone }}', '{{ email.is_spam }}', `{{ email.summary }}`)"><i class="bi bi-eye"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteEmail('{{ email.id }}')"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
@@ -291,33 +167,25 @@
         <div class="card-header"><h5 class="card-title">External Emails</h5></div>
         <div class="table-responsive">
           <table class="table align-middle">
-            <thead><tr><th>From</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>From</th><th>To</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {% if external_emails %}
-                {% for email in external_emails %}
-                <tr>
-                  <td>{{ email.sender_email }}</td>
-                  <td class="text-truncate" style="max-width: 150px;">{{ email.subject }}</td>
-                  <td>
-                    {% if email.tone %}<span class="tone-badge tone-{{ email.tone|lower }}">{{ email.tone }}</span>{% endif %}
-                    {% if email.is_spam %}<span class="spam-badge ms-1">SPAM</span>{% endif %}
-                  </td>
-                  <td>
-                    <div class="d-flex gap-2">
-                      <button class="btn btn-sm btn-view" onclick="viewEmail('{{ email.id }}', '{{ email.sender_email }}', '{{ email.recipient_email }}', '{{ email.subject }}', '{{ email.sent_at }}', `{{ email.body }}`, '{{ email.tone }}', '{{ email.is_spam }}', `{{ email.summary if email.summary else '' }}`)"><i class="bi bi-eye"></i></button>
-                      <button class="btn btn-sm btn-danger" onclick="confirmDeleteEmail('{{ email.id }}')"><i class="bi bi-trash"></i></button>
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="4" class="text-center text-muted py-5">
-                    <i class="bi bi-envelope-slash fs-2"></i>
-                    <p class="mt-2 mb-0">No external emails found.</p>
-                  </td>
-                </tr>
-              {% endif %}
+              {% for email in external_emails %}
+              <tr>
+                <td>{{ email.sender_email }}</td>
+                <td>{{ email.recipient_email }}</td>
+                <td class="text-truncate" style="max-width: 150px;">{{ email.subject }}</td>
+                <td>
+                  {% if email.tone %}<span class="tone-badge tone-{{ email.tone|lower }}">{{ email.tone }}</span>{% endif %}
+                  {% if email.is_spam %}<span class="spam-badge ms-1">SPAM</span>{% endif %}
+                </td>
+                <td>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-view" onclick="viewEmail('{{ email.id }}', '{{ email.sender_email }}', '{{ email.recipient_email }}', '{{ email.subject }}', '{{ email.sent_at }}', `{{ email.body }}`, '{{ email.tone }}', '{{ email.is_spam }}', `{{ email.summary }}`)"><i class="bi bi-eye"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteEmail('{{ email.id }}')"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
@@ -327,105 +195,150 @@
 </main>
 
 <div class="modal fade" id="emailModal" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Email Details</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-email-header">
-            <h4 id="modal-subject" class="modal-email-subject"></h4>
-            <div class="d-flex justify-content-between align-items-center">
-                <div id="modal-from" class="modal-email-meta"></div>
-                <div id="modal-date" class="modal-email-meta"></div>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-envelope me-2"></i> Email Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-             <div id="modal-to" class="modal-email-meta mt-1"></div>
-            <div id="modal-tags" class="modal-email-tags"></div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small text-muted">From</label>
+                    <p id="modal-sender" class="mb-0"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small text-muted">To</label>
+                    <p id="modal-recipient" class="mb-0"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Subject</label>
+                    <p id="modal-subject" class="mb-0 fw-medium"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Date</label>
+                    <p id="modal-date" class="mb-0"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Analysis</label>
+                    <div id="modal-analysis-tags" class="d-flex gap-2"></div>
+                </div>
+                <hr>
+                <div id="modal-summary-container" class="alert alert-info" style="display: none;">
+                    <h6 class="alert-heading"><i class="bi bi-lightbulb-fill"></i> Summary</h6>
+                    <p id="modal-summary-text" class="mb-0"></p>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small text-muted">Message</label>
+                    <div id="modal-body" class="p-3 bg-light rounded" style="white-space: pre-wrap;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
-        <div id="modal-summary-container">
-          <div class="summary-box">
-            <h6><i class="bi bi-lightbulb me-2"></i>AI Summary</h6>
-            <p id="modal-summary" class="mb-0">No summary available.</p>
-          </div>
-        </div>
-        <h6 class="mt-4"><strong>Full Message:</strong></h6>
-        <div id="modal-body-text" class="email-content"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-      </div>
     </div>
-  </div>
+</div>
+
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm User Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to permanently delete user <strong id="userToDeleteEmail"></strong>?</p>
+                <p class="text-danger">This action is irreversible and will also delete all emails sent by this user.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUserBtn"><i class="bi bi-trash"></i> Delete User</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="modal fade" id="deleteEmailModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title">Confirm Deletion</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body"><p>Are you sure you want to permanently delete this email? This action cannot be undone.</p></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-danger" id="confirmDeleteEmailBtn"><i class="bi bi-trash"></i> Delete Permanently</button>
-      </div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Email Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Are you sure you want to delete this email?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteEmailBtn">Delete</button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-let deleteEmailId = null;
+    const emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+    const deleteUserModal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+    const deleteEmailModal = new bootstrap.Modal(document.getElementById('deleteEmailModal'));
+    let userIdToDelete = null;
+    let emailIdToDelete = null;
 
-function viewEmail(id, from, to, subject, date, body, tone, spam, summary) {
-  document.getElementById('modal-subject').textContent = subject;
-  document.getElementById('modal-from').innerHTML = `<i class="bi bi-person-circle me-2"></i><strong>From:</strong> ${from}`;
-  document.getElementById('modal-to').innerHTML = `<i class="bi bi-arrow-right-circle me-2"></i><strong>To:</strong> ${to}`;
-  document.getElementById('modal-date').innerHTML = `<i class="bi bi-calendar3 me-2"></i>${date}`;
-  document.getElementById('modal-body-text').textContent = body;
-  
-  const summaryContainer = document.getElementById('modal-summary-container');
-  if (summary && summary.trim() !== "" && summary.trim() !== "None") {
-    document.getElementById('modal-summary').textContent = summary;
-    summaryContainer.style.display = 'block';
-  } else {
-    summaryContainer.style.display = 'none';
-  }
+    function viewEmail(id, from, to, subject, date, body, tone, is_spam, summary) {
+        document.getElementById('modal-sender').textContent = from;
+        document.getElementById('modal-recipient').textContent = to;
+        document.getElementById('modal-subject').textContent = subject;
+        document.getElementById('modal-date').textContent = new Date(date).toLocaleString();
+        document.getElementById('modal-body').textContent = body;
 
-  const tagsContainer = document.getElementById('modal-tags');
-  tagsContainer.innerHTML = ''; 
+        const tagsContainer = document.getElementById('modal-analysis-tags');
+        tagsContainer.innerHTML = '';
+        if (tone && tone !== 'None' && tone !== 'neutral') {
+            const toneBadge = document.createElement('span');
+            toneBadge.className = `tone-badge tone-${tone.toLowerCase()}`;
+            toneBadge.textContent = tone;
+            tagsContainer.appendChild(toneBadge);
+        }
+        if (String(is_spam) === '1' || String(is_spam) === 'true') {
+            const spamBadge = document.createElement('span');
+            spamBadge.className = 'spam-badge bg-danger text-white';
+            spamBadge.textContent = 'SPAM';
+            tagsContainer.appendChild(spamBadge);
+        }
 
-  if (tone && tone.trim() !== "" && tone.trim() !== "None") {
-    const toneBadge = document.createElement('span');
-    toneBadge.className = `tone-badge tone-${tone.toLowerCase()}`;
-    toneBadge.textContent = tone;
-    tagsContainer.appendChild(toneBadge);
-  }
+        const summaryContainer = document.getElementById('modal-summary-container');
+        const summaryText = document.getElementById('modal-summary-text');
+        if (summary && summary !== 'None' && summary.trim() !== '') {
+            summaryText.textContent = summary;
+            summaryContainer.style.display = 'block';
+        } else {
+            summaryContainer.style.display = 'none';
+        }
 
-  if (String(spam).toLowerCase() === 'true' || spam === '1') {
-    const spamBadge = document.createElement('span');
-    spamBadge.className = 'spam-badge';
-    spamBadge.textContent = 'SPAM';
-    tagsContainer.appendChild(spamBadge);
-  }
+        emailModal.show();
+    }
 
-  new bootstrap.Modal(document.getElementById('emailModal')).show();
-}
+    function confirmDeleteUser(userId, userEmail) {
+        userIdToDelete = userId;
+        document.getElementById('userToDeleteEmail').textContent = userEmail;
+        deleteUserModal.show();
+    }
 
-function confirmDeleteEmail(id) {
-  deleteEmailId = id;
-  new bootstrap.Modal(document.getElementById('deleteEmailModal')).show();
-}
+    function confirmDeleteEmail(emailId) {
+        emailIdToDelete = emailId;
+        deleteEmailModal.show();
+    }
 
-document.getElementById('confirmDeleteEmailBtn').addEventListener('click', () => {
-  fetch(`/admin/delete_email/${deleteEmailId}`, { method: 'DELETE' })
-    .then(res => res.ok ? location.reload() : alert('Failed to delete email'))
-    .catch(err => console.error('Error:', err));
-});
+    document.getElementById('confirmDeleteUserBtn').addEventListener('click', () => {
+        if (!userIdToDelete) return;
+        fetch(`/admin/delete_user/${userIdToDelete}`, { method: 'DELETE' })
+            .then(res => res.ok ? location.reload() : alert('Failed to delete user.'));
+    });
 
-Chart.defaults.font.family = 'Inter';
+    document.getElementById('confirmDeleteEmailBtn').addEventListener('click', () => {
+        if (!emailIdToDelete) return;
+        fetch(`/admin/delete_email/${emailIdToDelete}`, { method: 'DELETE' })
+            .then(res => res.ok ? location.reload() : alert('Failed to delete email.'));
+    });
+    Chart.defaults.font.family = 'Inter';
 
 const pieCtx = document.getElementById('statsPieChart');
 new Chart(pieCtx, {
