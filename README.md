@@ -152,4 +152,3 @@ Email/
 *  Dockerized deployment
 *  Real‑time new message alerts
 
-```
