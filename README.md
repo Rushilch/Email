@@ -139,6 +139,9 @@ Email/
 
   <img width="1919" height="912" alt="View mail" src="https://github.com/user-attachments/assets/9e21a1b9-dfad-4fb2-9d8c-69108cee2109" />
 
+  <img width="1919" height="912" alt="Delete User" src="https://github.com/user-attachments/assets/d2cd6265-b703-4101-84ba-a452f6435040" />
+
+
 
 
 ---
