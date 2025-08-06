@@ -97,6 +97,8 @@ Email/
 ├── backend/
 │   ├── llama_utils.py     # Groq API integration
 │   └── requirements.txt   # Dependencies
+├── statics/
+|   └── email.png          # favicon
 ├── templates/             # HTML templates
 │   ├── login.html
 │   ├── register.html
